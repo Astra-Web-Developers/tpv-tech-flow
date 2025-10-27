@@ -7,7 +7,11 @@ import Auth from "./pages/Auth";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Tickets from "./pages/Tickets";
+import NuevoTicket from "./pages/NuevoTicket";
+import DetalleTicket from "./pages/DetalleTicket";
 import Clientes from "./pages/Clientes";
+import DetalleCliente from "./pages/DetalleCliente";
+import Dietario from "./pages/Dietario";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,7 +27,11 @@ const App = () => (
           <Route element={<MainLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/tickets" element={<Tickets />} />
+            <Route path="/tickets/nuevo" element={<NuevoTicket />} />
+            <Route path="/tickets/:id" element={<DetalleTicket />} />
             <Route path="/clientes" element={<Clientes />} />
+            <Route path="/clientes/:id" element={<DetalleCliente />} />
+            <Route path="/dietario" element={<Dietario />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

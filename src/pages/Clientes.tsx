@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,7 @@ interface Cliente {
 }
 
 const Clientes = () => {
+  const navigate = useNavigate();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -212,7 +214,11 @@ const Clientes = () => {
           </Card>
         ) : (
           filteredClientes.map((cliente) => (
-            <Card key={cliente.id} className="hover:shadow-md transition-shadow">
+            <Card 
+              key={cliente.id} 
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => navigate(`/clientes/${cliente.id}`)}
+            >
               <CardHeader>
                 <CardTitle>{cliente.nombre}</CardTitle>
                 {cliente.cif && (
@@ -223,7 +229,7 @@ const Clientes = () => {
                 {cliente.telefono && (
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${cliente.telefono}`} className="hover:text-primary">
+                    <a href={`tel:${cliente.telefono}`} className="hover:text-primary" onClick={(e) => e.stopPropagation()}>
                       {cliente.telefono}
                     </a>
                   </div>
@@ -231,7 +237,7 @@ const Clientes = () => {
                 {cliente.email && (
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a href={`mailto:${cliente.email}`} className="hover:text-primary">
+                    <a href={`mailto:${cliente.email}`} className="hover:text-primary" onClick={(e) => e.stopPropagation()}>
                       {cliente.email}
                     </a>
                   </div>
