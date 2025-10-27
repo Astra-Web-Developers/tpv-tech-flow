@@ -17,6 +17,9 @@ import NotFound from "./pages/NotFound";
 import Tecnicos from "./pages/Tecnicos";
 import Chat from "./pages/Chat";
 import Ventas from "./pages/Ventas";
+import Stock from "./pages/Stock";
+import Furgonetas from "./pages/Furgonetas";
+import Protocolos from "./pages/Protocolos";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +42,9 @@ const App = () => (
             <Route path="/ventas" element={<Ventas />} />
             <Route path="/tecnicos" element={<Tecnicos />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/stock" element={<Stock />} />
+            <Route path="/furgonetas" element={<Furgonetas />} />
+            <Route path="/protocolos" element={<Protocolos />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
