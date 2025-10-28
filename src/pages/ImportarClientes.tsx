@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { importarClientes, borrarTodosLosClientes } from "@/scripts/importClientes";
+import { importarClientes, borrarTodosLosClientes, procesarArchivoExcel } from "@/scripts/importClientes";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Upload } from "lucide-react";
+import { Loader2, Trash2, Upload, FileSpreadsheet } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 
 export default function ImportarClientes() {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [lineasProcesadas, setLineasProcesadas] = useState<string[] | null>(null);
   const [result, setResult] = useState<{ imported: number; errors: number; erroresDetalle?: string[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleDelete = async () => {
@@ -44,11 +48,54 @@ export default function ImportarClientes() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast({
+        title: "Archivo no válido",
+        description: "Por favor selecciona un archivo Excel (.xlsx o .xls)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setArchivo(file);
+    setResult(null);
+
+    try {
+      const lineas = await procesarArchivoExcel(file);
+      setLineasProcesadas(lineas);
+      toast({
+        title: "Archivo cargado",
+        description: `Se encontraron ${lineas.length} registros en el archivo.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo procesar el archivo Excel",
+        variant: "destructive",
+      });
+      setArchivo(null);
+      setLineasProcesadas(null);
+    }
+  };
+
   const handleImport = async () => {
+    if (!lineasProcesadas || lineasProcesadas.length === 0) {
+      toast({
+        title: "Error",
+        description: "Por favor carga primero un archivo Excel",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     setResult(null);
     try {
-      const res = await importarClientes();
+      const res = await importarClientes(lineasProcesadas);
       setResult(res);
       toast({
         title: "Importación completada",
@@ -57,7 +104,7 @@ export default function ImportarClientes() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Hubo un error durante la importación",
+        description: error instanceof Error ? error.message : "Hubo un error durante la importación",
         variant: "destructive",
       });
     } finally {
@@ -72,12 +119,38 @@ export default function ImportarClientes() {
         
         <Alert className="mb-6">
           <AlertDescription>
-            Esta herramienta importará los clientes desde el archivo Excel (cm_SERVISA.xlsx).
-            Se crearán los clientes y sus contratos de mantenimiento correspondientes.
+            Sube tu archivo Excel con los datos de clientes y contratos de mantenimiento.
+            El formato esperado: Fecha Alta; Fecha Caducidad; Nombre Persona; Nombre Negocio; Tipo Contrato
           </AlertDescription>
         </Alert>
 
         <div className="space-y-4">
+          {/* Selector de archivo */}
+          <div className="p-4 border-2 border-dashed rounded-lg">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+            />
+            <label
+              htmlFor="file-upload"
+              className="flex flex-col items-center justify-center cursor-pointer py-4"
+            >
+              <FileSpreadsheet className="h-12 w-12 text-muted-foreground mb-2" />
+              <p className="text-sm font-medium">
+                {archivo ? archivo.name : "Click para seleccionar archivo Excel"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {lineasProcesadas 
+                  ? `${lineasProcesadas.length} registros encontrados` 
+                  : "Formatos aceptados: .xlsx, .xls"}
+              </p>
+            </label>
+          </div>
+
           <div className="flex gap-4">
             <Button
               onClick={handleDelete}
@@ -100,7 +173,7 @@ export default function ImportarClientes() {
 
             <Button
               onClick={handleImport}
-              disabled={loading || deleting}
+              disabled={loading || deleting || !lineasProcesadas}
               size="lg"
               className="flex-1"
             >
@@ -119,8 +192,9 @@ export default function ImportarClientes() {
           </div>
 
           <div className="text-sm text-muted-foreground">
-            <p><strong>Paso 1:</strong> Borra todos los clientes existentes (opcional)</p>
-            <p><strong>Paso 2:</strong> Importa los clientes del Excel</p>
+            <p><strong>Paso 1:</strong> Carga tu archivo Excel (.xlsx o .xls)</p>
+            <p><strong>Paso 2:</strong> Opcionalmente, borra todos los clientes existentes</p>
+            <p><strong>Paso 3:</strong> Haz click en "Importar Clientes"</p>
           </div>
         </div>
 
