@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Wrench } from "lucide-react";
+import loginBg from "@/assets/servisa-login-bg.jpg";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -67,8 +68,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-primary/5 p-4">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      {/* Background image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${loginBg})` }}
+      />
+      {/* Blue overlay */}
+      <div className="absolute inset-0 bg-primary/60" />
+      
+      {/* Content */}
+      <Card className="w-full max-w-md shadow-lg relative z-10">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <img src="/logo.png" alt="SERVISA" className="h-20 object-contain" />
