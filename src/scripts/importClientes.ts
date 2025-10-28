@@ -36,8 +36,9 @@ function parseDate(dateStr: string): string {
     const parts = dateStr.split('-');
     const day = parts[0];
     const monthMap: { [key: string]: string } = {
-      'Ene': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 'May': '05', 'Jun': '06',
-      'Jul': '07', 'Ago': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12'
+      'Ene': '01', 'Eno': '01', 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Abr': '04', 
+      'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Ago': '08', 'Aug': '08',
+      'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dic': '12', 'Dec': '12'
     };
     const month = monthMap[parts[1]] || parts[1];
     const year = parts[2];
@@ -142,18 +143,19 @@ export async function importarClientes(lineasExcel?: string[]) {
       const separator = line.includes('\t') ? '\t' : ';';
       const parts = line.split(separator).map(p => p.replace(/"/g, '').trim());
 
-      // Formato esperado: ID, Nombre (persona), Negocio, Tipo de Servicio, [Columna 5 opcional]
-      if (parts.length < 4) {
+      // Formato esperado: Fecha Inicio, Fecha Fin, Nombre (persona), Tipo de Negocio, Tipo de Mantenimiento
+      if (parts.length < 5) {
         console.log('Formato incorrecto:', line);
         errors++;
         erroresDetalle.push(`Formato incorrecto (línea ${i + 1}): Faltan columnas`);
         continue;
       }
 
-      const id = parts[0]; // ID no se usa pero lo parseamos
-      const nombrePersona = parts[1];
-      const nombreNegocio = parts[2];
-      const tipoServicio = parts[3];
+      const fechaInicioStr = parts[0];
+      const fechaFinStr = parts[1];
+      const nombrePersona = parts[2];
+      const nombreNegocio = parts[3];
+      const tipoMantenimiento = parts[4];
 
       // Usar el nombre del negocio como nombre del cliente, o el nombre de la persona si no hay negocio
       const clienteNombre = nombreNegocio || nombrePersona;
@@ -196,20 +198,27 @@ export async function importarClientes(lineasExcel?: string[]) {
         clienteId = nuevoCliente.id;
       }
 
-      // Calcular fechas para el contrato de mantenimiento
-      const fechaAlta = new Date().toISOString().split('T')[0]; // Fecha actual
-      let fechaCaducidad = new Date();
+      // Parsear fechas del contrato de mantenimiento
+      let fechaAlta;
+      let fechaCaducidad;
 
-      // Determinar la fecha de caducidad según el tipo de servicio
-      if (tipoServicio.toUpperCase().includes('TRIMESTRAL')) {
-        fechaCaducidad.setMonth(fechaCaducidad.getMonth() + 3);
-      } else if (tipoServicio.toUpperCase().includes('SEMESTRAL')) {
-        fechaCaducidad.setMonth(fechaCaducidad.getMonth() + 6);
-      } else if (tipoServicio.toUpperCase().includes('ANUAL')) {
-        fechaCaducidad.setFullYear(fechaCaducidad.getFullYear() + 1);
+      // Si las fechas son N/A, usar fecha actual y calcular según tipo
+      if (fechaInicioStr === 'N/A' || !fechaInicioStr) {
+        fechaAlta = new Date().toISOString().split('T')[0];
+        const fechaCalc = new Date();
+        
+        if (tipoMantenimiento.toUpperCase().includes('TRIMESTRAL')) {
+          fechaCalc.setMonth(fechaCalc.getMonth() + 3);
+        } else if (tipoMantenimiento.toUpperCase().includes('SEMESTRAL')) {
+          fechaCalc.setMonth(fechaCalc.getMonth() + 6);
+        } else {
+          fechaCalc.setFullYear(fechaCalc.getFullYear() + 1);
+        }
+        fechaCaducidad = fechaCalc.toISOString().split('T')[0];
       } else {
-        // Por defecto, 1 año
-        fechaCaducidad.setFullYear(fechaCaducidad.getFullYear() + 1);
+        // Parsear las fechas del Excel (formato: 28-Jun-2024)
+        fechaAlta = parseDate(fechaInicioStr);
+        fechaCaducidad = parseDate(fechaFinStr);
       }
 
       // Insertar contrato de mantenimiento
@@ -217,9 +226,9 @@ export async function importarClientes(lineasExcel?: string[]) {
         .from('contratos_mantenimiento')
         .insert({
           cliente_id: clienteId,
-          tipo: tipoServicio,
+          tipo: tipoMantenimiento,
           fecha_alta: fechaAlta,
-          fecha_caducidad: fechaCaducidad.toISOString().split('T')[0],
+          fecha_caducidad: fechaCaducidad,
           activo: true
         });
 
