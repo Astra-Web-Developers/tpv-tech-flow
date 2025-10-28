@@ -75,7 +75,7 @@ const Auth = () => {
         style={{ backgroundImage: `url(${loginBg})` }}
       />
       {/* Blue overlay */}
-      <div className="absolute inset-0 bg-primary/60" />
+      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(71, 137, 191, 0.6)' }} />
       
       {/* Content */}
       <Card className="w-full max-w-md shadow-lg relative z-10">
