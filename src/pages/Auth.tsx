@@ -68,17 +68,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
-      {/* Background image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${loginBg})` }}
-      />
-      {/* Blue overlay */}
-      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(71, 137, 191, 0.6)' }} />
-      
-      {/* Content */}
-      <Card className="w-full max-w-md shadow-lg relative z-10">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#4789bf' }}>
+      <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <img src="/logo.png" alt="SERVISA" className="h-20 object-contain" />
