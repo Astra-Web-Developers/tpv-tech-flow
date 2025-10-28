@@ -47,23 +47,16 @@ export async function logAuditAction(params: AuditLogParams): Promise<void> {
       ? `${profile.nombre || ""} ${profile.apellidos || ""}`.trim()
       : user.email;
 
-    // Registrar en el log de auditoría
-    const { error } = await supabase.from("audit_log").insert({
+    // TODO: Registrar en el log de auditoría
+    // La tabla audit_log aún no está creada en la base de datos
+    console.log("Audit log:", {
       user_id: user.id,
       user_email: user.email,
       user_name: userName || user.email,
       action: params.action,
       table_name: params.tableName,
       record_id: params.recordId,
-      old_data: params.oldData ? JSON.stringify(params.oldData) : null,
-      new_data: params.newData ? JSON.stringify(params.newData) : null,
-      ip_address: null, // Se podría obtener del servidor
-      user_agent: navigator.userAgent,
     });
-
-    if (error) {
-      console.error("Error registrando en auditoría:", error);
-    }
   } catch (error) {
     console.error("Error en logAuditAction:", error);
   }

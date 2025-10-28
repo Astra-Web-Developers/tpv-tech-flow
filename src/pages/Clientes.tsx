@@ -24,18 +24,28 @@ import { logCreate } from "@/lib/auditLog";
 interface Cliente {
   id: string;
   nombre: string;
-  logo_url: string | null;
-  persona_contacto: string | null;
+  cif: string | null;
   telefono: string | null;
   email: string | null;
-  nombre_fiscal: string | null;
-  cif: string | null;
-  nombre_encargado: string | null;
-  telefono_encargado: string | null;
   direccion: string | null;
   codigo_postal: string | null;
   poblacion: string | null;
   provincia: string | null;
+  notas: string | null;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  fecha_alta_cliente: string | null;
+  selector_fiscal: string | null;
+  informacion_destacada: string | null;
+  notas_especiales: string | null;
+  notas_adicionales: string | null;
+  nombre_asesoria: string | null;
+  telefono_asesoria: string | null;
+  persona_contacto_asesoria: string | null;
+  r_iva: string | null;
+  epigrafe: string | null;
 }
 
 const Clientes = () => {

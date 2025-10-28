@@ -109,17 +109,22 @@ export type Database = {
           created_by: string | null
           direccion: string | null
           email: string | null
+          epigrafe: string | null
+          fecha_alta_cliente: string | null
           id: string
-          logo_url: string | null
+          informacion_destacada: string | null
           nombre: string
-          nombre_encargado: string | null
-          nombre_fiscal: string | null
+          nombre_asesoria: string | null
           notas: string | null
-          persona_contacto: string | null
+          notas_adicionales: string | null
+          notas_especiales: string | null
+          persona_contacto_asesoria: string | null
           poblacion: string | null
           provincia: string | null
+          r_iva: string | null
+          selector_fiscal: string | null
           telefono: string | null
-          telefono_encargado: string | null
+          telefono_asesoria: string | null
           updated_at: string
         }
         Insert: {
@@ -130,17 +135,22 @@ export type Database = {
           created_by?: string | null
           direccion?: string | null
           email?: string | null
+          epigrafe?: string | null
+          fecha_alta_cliente?: string | null
           id?: string
-          logo_url?: string | null
+          informacion_destacada?: string | null
           nombre: string
-          nombre_encargado?: string | null
-          nombre_fiscal?: string | null
+          nombre_asesoria?: string | null
           notas?: string | null
-          persona_contacto?: string | null
+          notas_adicionales?: string | null
+          notas_especiales?: string | null
+          persona_contacto_asesoria?: string | null
           poblacion?: string | null
           provincia?: string | null
+          r_iva?: string | null
+          selector_fiscal?: string | null
           telefono?: string | null
-          telefono_encargado?: string | null
+          telefono_asesoria?: string | null
           updated_at?: string
         }
         Update: {
@@ -151,17 +161,22 @@ export type Database = {
           created_by?: string | null
           direccion?: string | null
           email?: string | null
+          epigrafe?: string | null
+          fecha_alta_cliente?: string | null
           id?: string
-          logo_url?: string | null
+          informacion_destacada?: string | null
           nombre?: string
-          nombre_encargado?: string | null
-          nombre_fiscal?: string | null
+          nombre_asesoria?: string | null
           notas?: string | null
-          persona_contacto?: string | null
+          notas_adicionales?: string | null
+          notas_especiales?: string | null
+          persona_contacto_asesoria?: string | null
           poblacion?: string | null
           provincia?: string | null
+          r_iva?: string | null
+          selector_fiscal?: string | null
           telefono?: string | null
-          telefono_encargado?: string | null
+          telefono_asesoria?: string | null
           updated_at?: string
         }
         Relationships: []

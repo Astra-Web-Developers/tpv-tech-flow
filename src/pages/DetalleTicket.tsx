@@ -23,7 +23,7 @@ interface Ticket {
   tiempo_total_minutos: number;
   fecha_creacion: string;
   cliente_id: string | null;
-  clientes: { nombre: string; telefono: string; direccion: string; email: string; persona_contacto: string } | null;
+  clientes: { nombre: string; telefono: string; direccion: string; email: string; cif: string } | null;
 }
 
 interface Material {
@@ -80,7 +80,7 @@ const DetalleTicket = () => {
         .from("tickets")
         .select(`
           *,
-          clientes (nombre, telefono, direccion)
+          clientes (nombre, telefono, direccion, email, cif)
         `)
         .eq("id", id)
         .single();
@@ -504,10 +504,10 @@ const DetalleTicket = () => {
             <div>
               <p className="font-semibold text-lg">{ticket.clientes?.nombre || "Sin cliente"}</p>
             </div>
-            {ticket.clientes?.persona_contacto && (
+            {ticket.clientes?.cif && (
               <div className="flex items-start gap-2">
-                <span className="text-muted-foreground">👤</span>
-                <span>{ticket.clientes.persona_contacto}</span>
+                <span className="text-muted-foreground">🆔</span>
+                <span>{ticket.clientes.cif}</span>
               </div>
             )}
             {ticket.clientes?.telefono && (
