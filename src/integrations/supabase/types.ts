@@ -111,13 +111,19 @@ export type Database = {
           email: string | null
           epigrafe: string | null
           fecha_alta_cliente: string | null
+          fecha_alta_contrato: string | null
+          fecha_caducidad_contrato: string | null
           id: string
           informacion_destacada: string | null
+          logo_url: string | null
           nombre: string
           nombre_asesoria: string | null
+          nombre_encargado: string | null
+          nombre_fiscal: string | null
           notas: string | null
           notas_adicionales: string | null
           notas_especiales: string | null
+          persona_contacto: string | null
           persona_contacto_asesoria: string | null
           poblacion: string | null
           provincia: string | null
@@ -125,6 +131,9 @@ export type Database = {
           selector_fiscal: string | null
           telefono: string | null
           telefono_asesoria: string | null
+          telefono_encargado: string | null
+          tiene_contrato_mantenimiento: boolean | null
+          tipo_contrato: string | null
           updated_at: string
         }
         Insert: {
@@ -137,13 +146,19 @@ export type Database = {
           email?: string | null
           epigrafe?: string | null
           fecha_alta_cliente?: string | null
+          fecha_alta_contrato?: string | null
+          fecha_caducidad_contrato?: string | null
           id?: string
           informacion_destacada?: string | null
+          logo_url?: string | null
           nombre: string
           nombre_asesoria?: string | null
+          nombre_encargado?: string | null
+          nombre_fiscal?: string | null
           notas?: string | null
           notas_adicionales?: string | null
           notas_especiales?: string | null
+          persona_contacto?: string | null
           persona_contacto_asesoria?: string | null
           poblacion?: string | null
           provincia?: string | null
@@ -151,6 +166,9 @@ export type Database = {
           selector_fiscal?: string | null
           telefono?: string | null
           telefono_asesoria?: string | null
+          telefono_encargado?: string | null
+          tiene_contrato_mantenimiento?: boolean | null
+          tipo_contrato?: string | null
           updated_at?: string
         }
         Update: {
@@ -163,13 +181,19 @@ export type Database = {
           email?: string | null
           epigrafe?: string | null
           fecha_alta_cliente?: string | null
+          fecha_alta_contrato?: string | null
+          fecha_caducidad_contrato?: string | null
           id?: string
           informacion_destacada?: string | null
+          logo_url?: string | null
           nombre?: string
           nombre_asesoria?: string | null
+          nombre_encargado?: string | null
+          nombre_fiscal?: string | null
           notas?: string | null
           notas_adicionales?: string | null
           notas_especiales?: string | null
+          persona_contacto?: string | null
           persona_contacto_asesoria?: string | null
           poblacion?: string | null
           provincia?: string | null
@@ -177,6 +201,9 @@ export type Database = {
           selector_fiscal?: string | null
           telefono?: string | null
           telefono_asesoria?: string | null
+          telefono_encargado?: string | null
+          tiene_contrato_mantenimiento?: boolean | null
+          tipo_contrato?: string | null
           updated_at?: string
         }
         Relationships: []
