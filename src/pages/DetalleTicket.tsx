@@ -489,7 +489,7 @@ const DetalleTicket = () => {
               </div>
               {ticket.clientes?.cif && (
                 <div className="flex items-start gap-2">
-                  <span className="text-muted-foreground">🆔</span>
+                  <span className="text-muted-foreground">ID: </span>
                   <span>{ticket.clientes.cif}</span>
                 </div>
               )}
