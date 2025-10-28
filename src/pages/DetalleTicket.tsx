@@ -8,8 +8,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, Play, Pause, Clock, Phone, Navigation, Calendar, Plus, Trash2, CheckCircle, AlertTriangle, Edit } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  Clock,
+  Phone,
+  Navigation,
+  Calendar,
+  Plus,
+  Trash2,
+  CheckCircle,
+  AlertTriangle,
+  Edit,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -78,10 +99,12 @@ const DetalleTicket = () => {
     try {
       const { data, error } = await supabase
         .from("tickets")
-        .select(`
+        .select(
+          `
           *,
           clientes (nombre, telefono, direccion, email, cif)
-        `)
+        `,
+        )
         .eq("id", id)
         .single();
 
@@ -122,23 +145,20 @@ const DetalleTicket = () => {
 
       // Cargar perfiles de técnicos
       if (historialData && historialData.length > 0) {
-        const tecnicoIds = [...new Set(historialData.map(h => h.tecnico_id))];
-        const { data: perfiles } = await supabase
-          .from("profiles")
-          .select("id, nombre")
-          .in("id", tecnicoIds);
+        const tecnicoIds = [...new Set(historialData.map((h) => h.tecnico_id))];
+        const { data: perfiles } = await supabase.from("profiles").select("id, nombre").in("id", tecnicoIds);
 
-        const perfilesMap = new Map(perfiles?.map(p => [p.id, p]) || []);
-        
-        const historialConPerfiles = historialData.map(h => ({
+        const perfilesMap = new Map(perfiles?.map((p) => [p.id, p]) || []);
+
+        const historialConPerfiles = historialData.map((h) => ({
           ...h,
-          profiles: { nombre: perfilesMap.get(h.tecnico_id)?.nombre || "Desconocido" }
+          profiles: { nombre: perfilesMap.get(h.tecnico_id)?.nombre || "Desconocido" },
         }));
 
         setHistorial(historialConPerfiles);
 
         // Check if there's an active timer
-        const activo = historialConPerfiles.find(h => !h.fin);
+        const activo = historialConPerfiles.find((h) => !h.fin);
         if (activo) {
           setTemporizadorActivo(true);
           setTiempoActualId(activo.id);
@@ -187,16 +207,16 @@ const DetalleTicket = () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Usuario no autenticado");
 
-      const { error } = await supabase
-        .from("historial_tiempo")
-        .insert([{
+      const { error } = await supabase.from("historial_tiempo").insert([
+        {
           ticket_id: id,
           tecnico_id: userData.user.id,
           inicio: tiempoManual.inicio,
           fin: tiempoManual.fin,
           duracion_minutos: duracionMinutos,
           notas: tiempoManual.notas || null,
-        }]);
+        },
+      ]);
 
       if (error) throw error;
 
@@ -220,11 +240,13 @@ const DetalleTicket = () => {
         // Start timer
         const { data, error } = await supabase
           .from("historial_tiempo")
-          .insert([{
-            ticket_id: id,
-            tecnico_id: userData.user.id,
-            inicio: new Date().toISOString(),
-          }])
+          .insert([
+            {
+              ticket_id: id,
+              tecnico_id: userData.user.id,
+              inicio: new Date().toISOString(),
+            },
+          ])
           .select()
           .single();
 
@@ -255,12 +277,12 @@ const DetalleTicket = () => {
 
   const agregarMaterial = async () => {
     try {
-      const { error } = await supabase
-        .from("materiales")
-        .insert([{
+      const { error } = await supabase.from("materiales").insert([
+        {
           ticket_id: id,
           ...nuevoMaterial,
-        }]);
+        },
+      ]);
 
       if (error) throw error;
 
@@ -276,10 +298,7 @@ const DetalleTicket = () => {
 
   const eliminarMaterial = async (materialId: string) => {
     try {
-      const { error } = await supabase
-        .from("materiales")
-        .delete()
-        .eq("id", materialId);
+      const { error } = await supabase.from("materiales").delete().eq("id", materialId);
 
       if (error) throw error;
       toast.success("Material eliminado");
@@ -294,10 +313,7 @@ const DetalleTicket = () => {
     try {
       // Detener el temporizador si está activo
       if (temporizadorActivo && tiempoActualId) {
-        await supabase
-          .from("historial_tiempo")
-          .update({ fin: new Date().toISOString() })
-          .eq("id", tiempoActualId);
+        await supabase.from("historial_tiempo").update({ fin: new Date().toISOString() }).eq("id", tiempoActualId);
       }
 
       const { error } = await supabase
@@ -340,10 +356,7 @@ const DetalleTicket = () => {
 
       // Detener temporizador si está activo
       if (temporizadorActivo && tiempoActualId) {
-        await supabase
-          .from("historial_tiempo")
-          .update({ fin: new Date().toISOString() })
-          .eq("id", tiempoActualId);
+        await supabase.from("historial_tiempo").update({ fin: new Date().toISOString() }).eq("id", tiempoActualId);
       }
 
       const { error } = await supabase
@@ -387,11 +400,16 @@ const DetalleTicket = () => {
 
   const getPrioridadColor = (prioridad: string) => {
     switch (prioridad) {
-      case "urgente": return "destructive";
-      case "alta": return "warning";
-      case "media": return "default";
-      case "baja": return "secondary";
-      default: return "default";
+      case "urgente":
+        return "destructive";
+      case "alta":
+        return "warning";
+      case "media":
+        return "default";
+      case "baja":
+        return "secondary";
+      default:
+        return "default";
     }
   };
 
@@ -413,7 +431,7 @@ const DetalleTicket = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Detalles del Ticket</CardTitle>
@@ -518,11 +536,7 @@ const DetalleTicket = () => {
             <div className="space-y-3">
               {ticket.estado === "activo" && (
                 <>
-                  <Button
-                    onClick={marcarComoResuelto}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    size="lg"
-                  >
+                  <Button onClick={marcarComoResuelto} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
                     <CheckCircle className="h-5 w-5 mr-2" />
                     Marcar como Resuelto
                   </Button>
@@ -540,15 +554,12 @@ const DetalleTicket = () => {
               {ticket.estado === "finalizado" && (
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Este ticket ya ha sido resuelto
-                  </AlertDescription>
+                  <AlertDescription>Este ticket ya ha sido resuelto</AlertDescription>
                 </Alert>
               )}
             </div>
           </CardContent>
         </Card>
-
       </div>
 
       <Card>
@@ -593,11 +604,15 @@ const DetalleTicket = () => {
                         step="0.01"
                         min="0"
                         value={nuevoMaterial.precio_unitario}
-                        onChange={(e) => setNuevoMaterial({ ...nuevoMaterial, precio_unitario: parseFloat(e.target.value) })}
+                        onChange={(e) =>
+                          setNuevoMaterial({ ...nuevoMaterial, precio_unitario: parseFloat(e.target.value) })
+                        }
                       />
                     </div>
                   </div>
-                  <Button onClick={agregarMaterial} className="w-full">Agregar</Button>
+                  <Button onClick={agregarMaterial} className="w-full">
+                    Agregar
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -613,21 +628,18 @@ const DetalleTicket = () => {
                   <div>
                     <p className="font-medium">{material.nombre}</p>
                     <p className="text-sm text-muted-foreground">
-                      Cantidad: {material.cantidad} × {material.precio_unitario}€ = {(material.cantidad * material.precio_unitario).toFixed(2)}€
+                      Cantidad: {material.cantidad} × {material.precio_unitario}€ ={" "}
+                      {(material.cantidad * material.precio_unitario).toFixed(2)}€
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => eliminarMaterial(material.id)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => eliminarMaterial(material.id)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
               ))}
               <div className="pt-2 border-t">
                 <p className="text-right font-bold">
-                  Total: {materiales.reduce((sum, m) => sum + (m.cantidad * m.precio_unitario), 0).toFixed(2)}€
+                  Total: {materiales.reduce((sum, m) => sum + m.cantidad * m.precio_unitario, 0).toFixed(2)}€
                 </p>
               </div>
             </div>
@@ -652,9 +664,7 @@ const DetalleTicket = () => {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Añadir Registro de Tiempo</DialogTitle>
-                  <DialogDescription>
-                    Registra manualmente el tiempo dedicado a este ticket
-                  </DialogDescription>
+                  <DialogDescription>Registra manualmente el tiempo dedicado a este ticket</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -743,8 +753,12 @@ const DetalleTicket = () => {
                   <div key={registro.id} className="p-3 border rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm">
-                        {new Date(registro.inicio).toLocaleDateString()} {new Date(registro.inicio).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} -
-                        {registro.fin ? ` ${new Date(registro.fin).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}` : ' En progreso'}
+                        {new Date(registro.inicio).toLocaleDateString()}{" "}
+                        {new Date(registro.inicio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}{" "}
+                        -
+                        {registro.fin
+                          ? ` ${new Date(registro.fin).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
+                          : " En progreso"}
                       </p>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -756,12 +770,11 @@ const DetalleTicket = () => {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">Técnico: {registro.profiles.nombre}</p>
-                    {registro.notas && (
-                      <p className="text-xs text-muted-foreground mt-1">Notas: {registro.notas}</p>
-                    )}
+                    {registro.notas && <p className="text-xs text-muted-foreground mt-1">Notas: {registro.notas}</p>}
                     {registro.fin && (
                       <p className="text-sm font-semibold text-primary mt-2">
-                        Duración: {Math.floor((registro.duracion_minutos || 0) / 60)}h {(registro.duracion_minutos || 0) % 60}min
+                        Duración: {Math.floor((registro.duracion_minutos || 0) / 60)}h{" "}
+                        {(registro.duracion_minutos || 0) % 60}min
                       </p>
                     )}
                   </div>
@@ -803,17 +816,16 @@ const DetalleTicket = () => {
             </Alert>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setDialogEliminarOpen(false);
-              setMotivoEliminacion("");
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDialogEliminarOpen(false);
+                setMotivoEliminacion("");
+              }}
+            >
               Cancelar
             </Button>
-            <Button
-              variant="destructive"
-              onClick={eliminarTicket}
-              disabled={!motivoEliminacion.trim()}
-            >
+            <Button variant="destructive" onClick={eliminarTicket} disabled={!motivoEliminacion.trim()}>
               <Trash2 className="h-4 w-4 mr-2" />
               Eliminar Ticket
             </Button>
