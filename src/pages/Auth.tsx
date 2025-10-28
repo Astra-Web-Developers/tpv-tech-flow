@@ -71,13 +71,8 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
-            <div className="h-12 w-12 rounded-lg bg-primary flex items-center justify-center">
-              <Wrench className="h-7 w-7 text-primary-foreground" />
-            </div>
+            <img src="/logo.png" alt="SERVISA" className="h-20 object-contain" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">
-            Sistema de Gestión TPV
-          </CardTitle>
           <CardDescription className="text-center">
             Accede a tu cuenta para gestionar tickets y clientes
           </CardDescription>

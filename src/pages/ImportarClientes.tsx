@@ -6,10 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Upload, FileSpreadsheet } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 
 export default function ImportarClientes() {
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState<{ current: number; total: number; message: string } | null>(null);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [lineasProcesadas, setLineasProcesadas] = useState<string[] | null>(null);
   const [result, setResult] = useState<{ imported: number; errors: number; erroresDetalle?: string[] } | null>(null);
@@ -22,8 +24,13 @@ export default function ImportarClientes() {
     }
 
     setDeleting(true);
+    setDeleteProgress({ current: 0, total: 100, message: "Iniciando borrado..." });
+
     try {
-      const success = await borrarTodosLosClientes();
+      const success = await borrarTodosLosClientes((current, total, message) => {
+        setDeleteProgress({ current, total, message });
+      });
+
       if (success) {
         toast({
           title: "Clientes borrados",
@@ -45,6 +52,7 @@ export default function ImportarClientes() {
       });
     } finally {
       setDeleting(false);
+      setDeleteProgress(null);
     }
   };
 
@@ -120,7 +128,12 @@ export default function ImportarClientes() {
         <Alert className="mb-6">
           <AlertDescription>
             Sube tu archivo Excel con los datos de clientes y contratos de mantenimiento.
-            El formato esperado: Fecha Alta; Fecha Caducidad; Nombre Persona; Nombre Negocio; Tipo Contrato
+            <br />
+            <strong>Formato esperado:</strong> ID | Nombre | Negocio | Tipo de Servicio
+            <br />
+            <span className="text-xs text-muted-foreground">
+              Ejemplo: 1 | Yulan Tong | I.T. Masajes | MANTENIMIENTO TRIMESTRAL
+            </span>
           </AlertDescription>
         </Alert>
 
@@ -190,6 +203,21 @@ export default function ImportarClientes() {
               )}
             </Button>
           </div>
+
+          {deleteProgress && (
+            <div className="p-4 bg-destructive/10 rounded-lg space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-destructive">{deleteProgress.message}</span>
+                <span className="text-muted-foreground">
+                  {deleteProgress.current} / {deleteProgress.total}
+                </span>
+              </div>
+              <Progress
+                value={(deleteProgress.current / deleteProgress.total) * 100}
+                className="h-2"
+              />
+            </div>
+          )}
 
           <div className="text-sm text-muted-foreground">
             <p><strong>Paso 1:</strong> Carga tu archivo Excel (.xlsx o .xls)</p>

@@ -11,6 +11,7 @@ import Tickets from "./pages/Tickets";
 import NuevoTicket from "./pages/NuevoTicket";
 import DetalleTicket from "./pages/DetalleTicket";
 import Clientes from "./pages/Clientes";
+import NuevoCliente from "./pages/NuevoCliente";
 import DetalleCliente from "./pages/DetalleCliente";
 import Dietario from "./pages/Dietario";
 import NotFound from "./pages/NotFound";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/tickets/nuevo" element={<NuevoTicket />} />
             <Route path="/tickets/:id" element={<DetalleTicket />} />
             <Route path="/clientes" element={<Clientes />} />
+            <Route path="/clientes/nuevo" element={<NuevoCliente />} />
             <Route path="/clientes/:id" element={<DetalleCliente />} />
             <Route path="/dietario" element={<Dietario />} />
             <Route path="/ventas" element={<Ventas />} />

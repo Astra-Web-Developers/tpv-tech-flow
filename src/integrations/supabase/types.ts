@@ -110,11 +110,16 @@ export type Database = {
           direccion: string | null
           email: string | null
           id: string
+          logo_url: string | null
           nombre: string
+          nombre_encargado: string | null
+          nombre_fiscal: string | null
           notas: string | null
+          persona_contacto: string | null
           poblacion: string | null
           provincia: string | null
           telefono: string | null
+          telefono_encargado: string | null
           updated_at: string
         }
         Insert: {
@@ -126,11 +131,16 @@ export type Database = {
           direccion?: string | null
           email?: string | null
           id?: string
+          logo_url?: string | null
           nombre: string
+          nombre_encargado?: string | null
+          nombre_fiscal?: string | null
           notas?: string | null
+          persona_contacto?: string | null
           poblacion?: string | null
           provincia?: string | null
           telefono?: string | null
+          telefono_encargado?: string | null
           updated_at?: string
         }
         Update: {
@@ -142,11 +152,16 @@ export type Database = {
           direccion?: string | null
           email?: string | null
           id?: string
+          logo_url?: string | null
           nombre?: string
+          nombre_encargado?: string | null
+          nombre_fiscal?: string | null
           notas?: string | null
+          persona_contacto?: string | null
           poblacion?: string | null
           provincia?: string | null
           telefono?: string | null
+          telefono_encargado?: string | null
           updated_at?: string
         }
         Relationships: []

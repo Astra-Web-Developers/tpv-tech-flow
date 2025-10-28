@@ -112,7 +112,7 @@ const Dashboard = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Bienvenido al Sistema de Gestión TPV</CardTitle>
+          <CardTitle>Bienvenido a SERVISA</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">

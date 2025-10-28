@@ -46,14 +46,8 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-            <Wrench className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-sidebar-foreground">TPV Manager</span>
-            <span className="text-xs text-sidebar-foreground/60">Gestión Técnica</span>
-          </div>
+        <div className="flex items-center justify-center bg-white rounded-2xl">
+          <img src="/logo.png" alt="SERVISA" className="h-20 object-contain" />
         </div>
       </SidebarHeader>
 

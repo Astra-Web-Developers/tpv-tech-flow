@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Clock } from "lucide-react";
+import { Plus, Search, Clock, LayoutGrid, List, Filter } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Ticket {
   id: string;
@@ -24,6 +26,9 @@ const Tickets = () => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [vistaActual, setVistaActual] = useState<"lista" | "kanban">("kanban");
+  const [ordenarPor, setOrdenarPor] = useState<"prioridad" | "fecha" | "estado">("prioridad");
+  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
 
   useEffect(() => {
     loadTickets();
@@ -74,12 +79,39 @@ const Tickets = () => {
     }
   };
 
-  const filteredTickets = tickets.filter(
-    (ticket) =>
-      ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.numero.toString().includes(searchTerm) ||
-      ticket.clientes?.nombre.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTickets = tickets
+    .filter((ticket) => {
+      const matchesSearch =
+        ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.numero.toString().includes(searchTerm) ||
+        ticket.clientes?.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesEstado = filtroEstado === "todos" || ticket.estado === filtroEstado;
+
+      return matchesSearch && matchesEstado;
+    })
+    .sort((a, b) => {
+      if (ordenarPor === "prioridad") {
+        const prioridadOrden: Record<string, number> = {
+          urgente: 0,
+          alta: 1,
+          media: 2,
+          baja: 3,
+        };
+        return prioridadOrden[a.prioridad] - prioridadOrden[b.prioridad];
+      } else if (ordenarPor === "fecha") {
+        return new Date(b.fecha_creacion).getTime() - new Date(a.fecha_creacion).getTime();
+      } else if (ordenarPor === "estado") {
+        return a.estado.localeCompare(b.estado);
+      }
+      return 0;
+    });
+
+  const ticketsPorColumna = {
+    activo: filteredTickets.filter((t) => t.estado === "activo"),
+    finalizado: filteredTickets.filter((t) => t.estado === "finalizado"),
+    eliminado: filteredTickets.filter((t) => t.estado === "eliminado"),
+  };
 
   if (loading) {
     return (
@@ -91,6 +123,41 @@ const Tickets = () => {
       </div>
     );
   }
+
+  const renderTicketCard = (ticket: Ticket) => (
+    <Card
+      key={ticket.id}
+      className="hover:shadow-md transition-shadow cursor-pointer mb-3"
+      onClick={() => navigate(`/tickets/${ticket.id}`)}
+    >
+      <CardHeader className="pb-3">
+        <div className="space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-sm font-semibold">
+              #{ticket.numero} - {ticket.titulo}
+            </CardTitle>
+            <Badge variant={getPrioridadColor(ticket.prioridad)} className="text-xs">
+              {ticket.prioridad}
+            </Badge>
+          </div>
+          <CardDescription className="text-xs">
+            {ticket.clientes?.nombre || "Sin cliente"}
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {Math.floor(ticket.tiempo_total_minutos / 60)}h {ticket.tiempo_total_minutos % 60}m
+          </div>
+          <div>
+            {new Date(ticket.fecha_creacion).toLocaleDateString()}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -105,69 +172,154 @@ const Tickets = () => {
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por título, número o cliente..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Filtros y búsqueda */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por título, número o cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <Select value={ordenarPor} onValueChange={(value: any) => setOrdenarPor(value)}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Ordenar por..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="prioridad">Por Prioridad</SelectItem>
+            <SelectItem value="fecha">Por Fecha</SelectItem>
+            <SelectItem value="estado">Por Estado</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Tabs value={vistaActual} onValueChange={(value: any) => setVistaActual(value)} className="w-full sm:w-auto">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="kanban" className="flex items-center gap-2">
+              <LayoutGrid className="h-4 w-4" />
+              Kanban
+            </TabsTrigger>
+            <TabsTrigger value="lista" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              Lista
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      <div className="grid gap-4">
-        {filteredTickets.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-10">
-              <p className="text-muted-foreground mb-4">No se encontraron tickets</p>
-              <Button onClick={() => navigate("/tickets/nuevo")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Crear Primer Ticket
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredTickets.map((ticket) => (
-            <Card
-              key={ticket.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/tickets/${ticket.id}`)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="flex items-center gap-2">
-                      #{ticket.numero} - {ticket.titulo}
-                    </CardTitle>
-                    <CardDescription>
-                      {ticket.clientes?.nombre || "Sin cliente asignado"}
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge variant={getPrioridadColor(ticket.prioridad)}>
-                      {ticket.prioridad}
-                    </Badge>
-                    <Badge variant={getEstadoColor(ticket.estado)}>
-                      {ticket.estado}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {Math.floor(ticket.tiempo_total_minutos / 60)}h {ticket.tiempo_total_minutos % 60}m
-                  </div>
-                  <div>
-                    Creado: {new Date(ticket.fecha_creacion).toLocaleDateString()}
-                  </div>
-                </div>
+      {/* Vista Kanban */}
+      {vistaActual === "kanban" ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Columna: Activo */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">Activo</h3>
+              <Badge variant="default">{ticketsPorColumna.activo.length}</Badge>
+            </div>
+            <div className="space-y-3 min-h-[200px] p-3 bg-muted/30 rounded-lg">
+              {ticketsPorColumna.activo.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-8">
+                  No hay tickets activos
+                </p>
+              ) : (
+                ticketsPorColumna.activo.map(renderTicketCard)
+              )}
+            </div>
+          </div>
+
+          {/* Columna: Finalizado */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">Finalizado</h3>
+              <Badge variant="success">{ticketsPorColumna.finalizado.length}</Badge>
+            </div>
+            <div className="space-y-3 min-h-[200px] p-3 bg-muted/30 rounded-lg">
+              {ticketsPorColumna.finalizado.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-8">
+                  No hay tickets finalizados
+                </p>
+              ) : (
+                ticketsPorColumna.finalizado.map(renderTicketCard)
+              )}
+            </div>
+          </div>
+
+          {/* Columna: Eliminado */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">Eliminado</h3>
+              <Badge variant="secondary">{ticketsPorColumna.eliminado.length}</Badge>
+            </div>
+            <div className="space-y-3 min-h-[200px] p-3 bg-muted/30 rounded-lg">
+              {ticketsPorColumna.eliminado.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-8">
+                  No hay tickets eliminados
+                </p>
+              ) : (
+                ticketsPorColumna.eliminado.map(renderTicketCard)
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Vista Lista */
+        <div className="grid gap-4">
+          {filteredTickets.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <p className="text-muted-foreground mb-4">No se encontraron tickets</p>
+                <Button onClick={() => navigate("/tickets/nuevo")}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear Primer Ticket
+                </Button>
               </CardContent>
             </Card>
-          ))
-        )}
-      </div>
+          ) : (
+            filteredTickets.map((ticket) => (
+              <Card
+                key={ticket.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate(`/tickets/${ticket.id}`)}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="flex items-center gap-2">
+                        #{ticket.numero} - {ticket.titulo}
+                      </CardTitle>
+                      <CardDescription>
+                        {ticket.clientes?.nombre || "Sin cliente asignado"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant={getPrioridadColor(ticket.prioridad)}>
+                        {ticket.prioridad}
+                      </Badge>
+                      <Badge variant={getEstadoColor(ticket.estado)}>
+                        {ticket.estado}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {Math.floor(ticket.tiempo_total_minutos / 60)}h {ticket.tiempo_total_minutos % 60}m
+                    </div>
+                    <div>
+                      Creado: {new Date(ticket.fecha_creacion).toLocaleDateString()}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };

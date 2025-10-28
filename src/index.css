@@ -45,14 +45,14 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 202 47% 51%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 202 47% 51%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 27%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 25% 15%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 202 47% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 202 47% 41%;
+    --sidebar-ring: 202 47% 51%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%));

@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
 
 interface Cliente {
   id: string;
@@ -50,6 +51,9 @@ const DetalleCliente = () => {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [dialogEquipoOpen, setDialogEquipoOpen] = useState(false);
+  const [showAllTickets, setShowAllTickets] = useState(false);
+  const [ticketsAbiertos, setTicketsAbiertos] = useState<Ticket[]>([]);
+  const [historialCompleto, setHistorialCompleto] = useState<Ticket[]>([]);
   const [nuevoEquipo, setNuevoEquipo] = useState({
     tipo: "",
     marca: "",
@@ -75,6 +79,11 @@ const DetalleCliente = () => {
 
       if (error) throw error;
       setCliente(data);
+
+      // Registrar visualización del cliente
+      if (id) {
+        await logView("clientes", id);
+      }
     } catch (error) {
       console.error("Error cargando cliente:", error);
       toast.error("Error al cargar cliente");
@@ -101,6 +110,28 @@ const DetalleCliente = () => {
 
   const loadTickets = async () => {
     try {
+      // Cargar tickets abiertos
+      const { data: abiertos, error: errorAbiertos } = await supabase
+        .from("tickets")
+        .select("id, numero, titulo, estado, fecha_creacion")
+        .eq("cliente_id", id)
+        .eq("estado", "activo")
+        .order("fecha_creacion", { ascending: false });
+
+      if (errorAbiertos) throw errorAbiertos;
+      setTicketsAbiertos(abiertos || []);
+
+      // Cargar historial completo
+      const { data: completo, error: errorCompleto } = await supabase
+        .from("tickets")
+        .select("id, numero, titulo, estado, fecha_creacion")
+        .eq("cliente_id", id)
+        .order("fecha_creacion", { ascending: false });
+
+      if (errorCompleto) throw errorCompleto;
+      setHistorialCompleto(completo || []);
+
+      // Cargar tickets recientes para la sección existente
       const { data, error } = await supabase
         .from("tickets")
         .select("id, numero, titulo, estado, fecha_creacion")
@@ -115,26 +146,64 @@ const DetalleCliente = () => {
     }
   };
 
+  const exportarHistorial = async () => {
+    const csv = [
+      ["Número", "Título", "Estado", "Fecha Creación"],
+      ...historialCompleto.map(t => [
+        t.numero,
+        t.titulo,
+        t.estado,
+        new Date(t.fecha_creacion).toLocaleDateString()
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `historial-tickets-${cliente?.nombre || 'cliente'}.csv`;
+    a.click();
+
+    // Registrar exportación en auditoría
+    if (id) {
+      await logExport("tickets", `Exportación de historial completo de tickets del cliente ${cliente?.nombre}`);
+    }
+
+    toast.success("Historial exportado");
+  };
+
+  const enviarHistorialEmail = async () => {
+    // Aquí implementarías el envío por email
+    toast.info("Función de envío por email próximamente");
+  };
+
   const handleUpdate = async () => {
     if (!cliente) return;
 
     try {
+      const updateData = {
+        nombre: cliente.nombre,
+        cif: cliente.cif,
+        telefono: cliente.telefono,
+        email: cliente.email,
+        direccion: cliente.direccion,
+        poblacion: cliente.poblacion,
+        provincia: cliente.provincia,
+        codigo_postal: cliente.codigo_postal,
+        notas: cliente.notas,
+      };
+
       const { error } = await supabase
         .from("clientes")
-        .update({
-          nombre: cliente.nombre,
-          cif: cliente.cif,
-          telefono: cliente.telefono,
-          email: cliente.email,
-          direccion: cliente.direccion,
-          poblacion: cliente.poblacion,
-          provincia: cliente.provincia,
-          codigo_postal: cliente.codigo_postal,
-          notas: cliente.notas,
-        })
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;
+
+      // Registrar actualización en auditoría
+      if (id) {
+        await logUpdate("clientes", id, {}, updateData);
+      }
 
       toast.success("Cliente actualizado");
       setEditMode(false);
@@ -203,6 +272,63 @@ const DetalleCliente = () => {
           {editMode ? "Guardar" : "Editar"}
         </Button>
       </div>
+
+      {/* Alertas Visuales */}
+      <div className="flex gap-3">
+        {/* Alerta Moroso - Descomentar y conectar con campo de BD */}
+        {/* {cliente.es_moroso && (
+          <div className="flex items-center gap-2 bg-red-100 text-red-800 px-4 py-3 rounded-lg border-2 border-red-300 font-semibold">
+            <AlertTriangle className="h-5 w-5" />
+            CLIENTE MOROSO
+          </div>
+        )} */}
+        {/* Alerta Sin Contrato */}
+        {/* {!cliente.tiene_contrato && (
+          <div className="flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-3 rounded-lg border-2 border-orange-300 font-semibold">
+            <FileX className="h-5 w-5" />
+            SIN CONTRATO DE MANTENIMIENTO
+          </div>
+        )} */}
+      </div>
+
+      {/* Tickets Abiertos - Prominente */}
+      {ticketsAbiertos.length > 0 && (
+        <Card className="border-2 border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-blue-900">
+                  Tickets Abiertos ({ticketsAbiertos.length})
+                </CardTitle>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Ticket
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {ticketsAbiertos.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="flex items-center justify-between p-4 bg-white border-2 border-blue-300 rounded-lg hover:shadow-md cursor-pointer transition-all"
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                >
+                  <div className="flex-1">
+                    <p className="font-semibold text-blue-900">#{ticket.numero} - {ticket.titulo}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Creado: {new Date(ticket.fecha_creacion).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Badge className="bg-blue-600">ACTIVO</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
@@ -391,39 +517,86 @@ const DetalleCliente = () => {
         </CardContent>
       </Card>
 
+      {/* Historial Completo de Tickets */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Tickets Recientes</CardTitle>
-            <Button size="sm" variant="outline" onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Ticket
-            </Button>
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              <CardTitle>Historial Completo de Tickets</CardTitle>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={exportarHistorial}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+              <Button size="sm" variant="outline" onClick={enviarHistorialEmail}>
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Email
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          {tickets.length === 0 ? (
+          {historialCompleto.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">No hay tickets registrados</p>
           ) : (
-            <div className="space-y-2">
-              {tickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                  onClick={() => navigate(`/tickets/${ticket.id}`)}
-                >
-                  <div>
-                    <p className="font-medium">#{ticket.numero} - {ticket.titulo}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(ticket.fecha_creacion).toLocaleDateString()}
-                    </p>
+            <>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {(showAllTickets ? historialCompleto : historialCompleto.slice(0, 10)).map((ticket) => (
+                  <div
+                    key={ticket.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium">#{ticket.numero} - {ticket.titulo}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(ticket.fecha_creacion).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {ticket.estado === "activo" ? (
+                        <Badge variant="default">Activo</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Finalizado
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <Badge variant={ticket.estado === "activo" ? "default" : "success"}>
-                    {ticket.estado}
-                  </Badge>
+                ))}
+              </div>
+              {historialCompleto.length > 10 && (
+                <div className="mt-4 text-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAllTickets(!showAllTickets)}
+                  >
+                    {showAllTickets ? "Mostrar menos" : `Mostrar todos (${historialCompleto.length})`}
+                  </Button>
                 </div>
-              ))}
-            </div>
+              )}
+              <div className="mt-4 pt-4 border-t">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-blue-600">{ticketsAbiertos.length}</p>
+                    <p className="text-sm text-muted-foreground">Abiertos</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {historialCompleto.filter(t => t.estado === "finalizado").length}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Finalizados</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{historialCompleto.length}</p>
+                    <p className="text-sm text-muted-foreground">Total</p>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
