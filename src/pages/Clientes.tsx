@@ -179,9 +179,13 @@ const Clientes = () => {
         }
       }
 
+      // Convertir strings vacíos a null para campos de fecha
       const clienteData = {
         ...formData,
-        logo_url: logoUrl
+        logo_url: logoUrl,
+        fecha_alta_cliente: formData.fecha_alta_cliente || null,
+        fecha_alta_contrato: formData.fecha_alta_contrato || null,
+        fecha_caducidad_contrato: formData.fecha_caducidad_contrato || null,
       };
 
       const { data: nuevoCliente, error } = await supabase
