@@ -461,92 +461,91 @@ const DetalleTicket = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Acciones Rápidas</CardTitle>
+            <CardTitle>Cliente y Acciones</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {ticket.estado === "activo" && (
-              <>
-                <Button
-                  onClick={marcarComoResuelto}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  size="lg"
-                >
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  Marcar como Resuelto
-                </Button>
-                <Button
-                  onClick={() => setDialogEliminarOpen(true)}
-                  variant="destructive"
-                  className="w-full"
-                  size="lg"
-                >
-                  <Trash2 className="h-5 w-5 mr-2" />
-                  Eliminar Ticket
-                </Button>
-              </>
-            )}
-            {ticket.estado === "finalizado" && (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Este ticket ya ha sido resuelto
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Información del Cliente</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="font-semibold text-lg">{ticket.clientes?.nombre || "Sin cliente"}</p>
+          <CardContent className="space-y-4">
+            {/* Información del Cliente */}
+            <div className="space-y-3 pb-4 border-b">
+              <div>
+                <p className="font-semibold text-lg">{ticket.clientes?.nombre || "Sin cliente"}</p>
+              </div>
+              {ticket.clientes?.cif && (
+                <div className="flex items-start gap-2">
+                  <span className="text-muted-foreground">🆔</span>
+                  <span>{ticket.clientes.cif}</span>
+                </div>
+              )}
+              {ticket.clientes?.telefono && (
+                <div className="flex items-start gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <a href={`tel:${ticket.clientes.telefono}`} className="hover:text-primary hover:underline">
+                    {ticket.clientes.telefono}
+                  </a>
+                </div>
+              )}
+              {ticket.clientes?.email && (
+                <div className="flex items-start gap-2">
+                  <span className="text-muted-foreground">✉</span>
+                  <a href={`mailto:${ticket.clientes.email}`} className="hover:text-primary hover:underline text-sm">
+                    {ticket.clientes.email}
+                  </a>
+                </div>
+              )}
+              {ticket.clientes?.direccion && (
+                <div className="flex items-start gap-2">
+                  <Navigation className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ticket.clientes.direccion)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary hover:underline text-sm"
+                  >
+                    {ticket.clientes.direccion}
+                  </a>
+                </div>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => navigate(`/clientes/${ticket.cliente_id}`)}
+              >
+                Ver Perfil Completo
+              </Button>
             </div>
-            {ticket.clientes?.cif && (
-              <div className="flex items-start gap-2">
-                <span className="text-muted-foreground">🆔</span>
-                <span>{ticket.clientes.cif}</span>
-              </div>
-            )}
-            {ticket.clientes?.telefono && (
-              <div className="flex items-start gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <a href={`tel:${ticket.clientes.telefono}`} className="hover:text-primary hover:underline">
-                  {ticket.clientes.telefono}
-                </a>
-              </div>
-            )}
-            {ticket.clientes?.email && (
-              <div className="flex items-start gap-2">
-                <span className="text-muted-foreground">✉</span>
-                <a href={`mailto:${ticket.clientes.email}`} className="hover:text-primary hover:underline text-sm">
-                  {ticket.clientes.email}
-                </a>
-              </div>
-            )}
-            {ticket.clientes?.direccion && (
-              <div className="flex items-start gap-2">
-                <Navigation className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ticket.clientes.direccion)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary hover:underline text-sm"
-                >
-                  {ticket.clientes.direccion}
-                </a>
-              </div>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full mt-4"
-              onClick={() => navigate(`/clientes/${ticket.cliente_id}`)}
-            >
-              Ver Perfil Completo
-            </Button>
+
+            {/* Acciones Rápidas */}
+            <div className="space-y-3">
+              {ticket.estado === "activo" && (
+                <>
+                  <Button
+                    onClick={marcarComoResuelto}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    size="lg"
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Marcar como Resuelto
+                  </Button>
+                  <Button
+                    onClick={() => setDialogEliminarOpen(true)}
+                    variant="destructive"
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Trash2 className="h-5 w-5 mr-2" />
+                    Eliminar Ticket
+                  </Button>
+                </>
+              )}
+              {ticket.estado === "finalizado" && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Este ticket ya ha sido resuelto
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
           </CardContent>
         </Card>
 
