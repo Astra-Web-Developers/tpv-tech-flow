@@ -32,6 +32,7 @@ interface Cliente {
   codigo_postal: string | null;
   poblacion: string | null;
   provincia: string | null;
+  logo_url: string | null;
   notas: string | null;
   activo: boolean;
   created_at: string;
@@ -793,62 +794,74 @@ const Clientes = () => {
           filteredClientes.map((cliente) => (
             <Card
               key={cliente.id}
-              className="hover:shadow-md transition-shadow cursor-pointer relative"
+              className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 overflow-hidden group"
               onClick={() => navigate(`/clientes/${cliente.id}`)}
             >
+              {/* Logo Header */}
+              {cliente.logo_url && (
+                <div className="bg-gradient-to-br from-muted/30 to-muted/50 p-6 flex items-center justify-center border-b transition-colors group-hover:from-primary/5 group-hover:to-primary/10">
+                  <img 
+                    src={cliente.logo_url} 
+                    alt={`Logo ${cliente.nombre}`}
+                    className="max-h-24 max-w-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.parentElement!.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+              
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <CardTitle>{cliente.nombre}</CardTitle>
+                  <div className="flex-1 space-y-1">
+                    <CardTitle className="text-xl group-hover:text-primary transition-colors">{cliente.nombre}</CardTitle>
                     {cliente.nombre_fiscal && (
-                      <CardDescription className="font-medium">{cliente.nombre_fiscal}</CardDescription>
+                      <CardDescription className="font-semibold text-base">{cliente.nombre_fiscal}</CardDescription>
                     )}
                     {cliente.cif && (
-                      <CardDescription>CIF: {cliente.cif}</CardDescription>
+                      <CardDescription className="flex items-center gap-1">
+                        <span className="font-medium">CIF:</span> {cliente.cif}
+                      </CardDescription>
                     )}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    {/* Badge Moroso - ejemplo, necesitarás añadir este campo a la BD */}
-                    {/* {cliente.es_moroso && (
-                      <div className="flex items-center gap-1 bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">
-                        <AlertTriangle className="h-3 w-3" />
-                        MOROSO
-                      </div>
-                    )} */}
-                    {/* Badge Sin Contrato - ejemplo */}
-                    {/* {!cliente.tiene_contrato && (
-                      <div className="flex items-center gap-1 bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-semibold">
-                        <FileX className="h-3 w-3" />
-                        SIN CONTRATO
-                      </div>
-                    )} */}
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-2">
+              
+              <CardContent className="space-y-3 pb-6">
                 {cliente.telefono && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${cliente.telefono}`} className="hover:text-primary" onClick={(e) => e.stopPropagation()}>
+                    <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <a 
+                      href={`tel:${cliente.telefono}`} 
+                      className="text-primary hover:underline font-medium" 
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {cliente.telefono}
                     </a>
                   </div>
                 )}
                 {cliente.email && (
                   <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a href={`mailto:${cliente.email}`} className="hover:text-primary" onClick={(e) => e.stopPropagation()}>
+                    <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <a 
+                      href={`mailto:${cliente.email}`} 
+                      className="text-primary hover:underline truncate font-medium" 
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {cliente.email}
                     </a>
                   </div>
                 )}
                 {cliente.direccion && (
-                  <p className="text-sm text-muted-foreground">
-                    {cliente.direccion}
-                    {cliente.codigo_postal && `, ${cliente.codigo_postal}`}
-                    {cliente.poblacion && ` - ${cliente.poblacion}`}
-                    {cliente.provincia && ` (${cliente.provincia})`}
-                  </p>
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      <span className="font-semibold block mb-1">📍 Dirección:</span>
+                      {cliente.direccion}
+                      {cliente.codigo_postal && <><br />{cliente.codigo_postal}</>}
+                      {cliente.poblacion && ` - ${cliente.poblacion}`}
+                      {cliente.provincia && ` (${cliente.provincia})`}
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
