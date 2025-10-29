@@ -5,6 +5,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Evento {
   id: string;
@@ -19,6 +37,13 @@ const Dietario = () => {
   const [loading, setLoading] = useState(true);
   const [fechaActual, setFechaActual] = useState(new Date());
   const [vistaActual, setVistaActual] = useState<"mes" | "semana" | "dia">("mes");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [nuevoEvento, setNuevoEvento] = useState({
+    titulo: "",
+    descripcion: "",
+    fecha: new Date().toISOString().split('T')[0],
+    tipo: "ticket" as const,
+  });
 
   useEffect(() => {
     loadEventos();
@@ -105,6 +130,49 @@ const Dietario = () => {
     });
   };
 
+  const crearEvento = async () => {
+    if (!nuevoEvento.titulo.trim()) {
+      toast.error("El título es obligatorio");
+      return;
+    }
+
+    try {
+      // Por ahora creamos un ticket como evento
+      const { error } = await supabase
+        .from("tickets")
+        .insert({
+          titulo: nuevoEvento.titulo,
+          descripcion: nuevoEvento.descripcion,
+          estado: "activo",
+          fecha_creacion: nuevoEvento.fecha,
+        });
+
+      if (error) throw error;
+
+      toast.success("Evento creado exitosamente");
+      setDialogOpen(false);
+      setNuevoEvento({
+        titulo: "",
+        descripcion: "",
+        fecha: new Date().toISOString().split('T')[0],
+        tipo: "ticket",
+      });
+      loadEventos();
+    } catch (error) {
+      console.error("Error creando evento:", error);
+      toast.error("Error al crear evento");
+    }
+  };
+
+  const handleDiaClick = (dia: number) => {
+    const fecha = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), dia);
+    setNuevoEvento({
+      ...nuevoEvento,
+      fecha: fecha.toISOString().split('T')[0],
+    });
+    setDialogOpen(true);
+  };
+
   const meses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -130,10 +198,69 @@ const Dietario = () => {
           <h1 className="text-3xl font-bold">Dietario</h1>
           <p className="text-muted-foreground">Calendario de actividades y planificación</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Evento
-        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Evento
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Crear Nuevo Evento</DialogTitle>
+              <DialogDescription>
+                Agrega un nuevo evento al calendario
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Título</Label>
+                <Input
+                  value={nuevoEvento.titulo}
+                  onChange={(e) => setNuevoEvento({ ...nuevoEvento, titulo: e.target.value })}
+                  placeholder="Título del evento"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Input
+                  type="date"
+                  value={nuevoEvento.fecha}
+                  onChange={(e) => setNuevoEvento({ ...nuevoEvento, fecha: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo</Label>
+                <Select
+                  value={nuevoEvento.tipo}
+                  onValueChange={(value: any) => setNuevoEvento({ ...nuevoEvento, tipo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ticket">Ticket</SelectItem>
+                    <SelectItem value="venta">Venta</SelectItem>
+                    <SelectItem value="mantenimiento">Mantenimiento</SelectItem>
+                    <SelectItem value="ausencia">Ausencia</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Descripción</Label>
+                <Textarea
+                  value={nuevoEvento.descripcion}
+                  onChange={(e) => setNuevoEvento({ ...nuevoEvento, descripcion: e.target.value })}
+                  placeholder="Descripción del evento (opcional)"
+                  rows={3}
+                />
+              </div>
+              <Button onClick={crearEvento} className="w-full">
+                Crear Evento
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
@@ -197,7 +324,8 @@ const Dietario = () => {
               return (
                 <div
                   key={dia}
-                  className={`min-h-24 border rounded-lg p-2 ${
+                  onClick={() => handleDiaClick(dia)}
+                  className={`min-h-24 border rounded-lg p-2 cursor-pointer ${
                     esHoy ? "bg-primary/5 border-primary" : "bg-card"
                   } hover:shadow-md transition-shadow`}
                 >
