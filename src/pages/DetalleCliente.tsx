@@ -1218,28 +1218,46 @@ const DetalleCliente = () => {
                       </Badge>
                     </div>
 
-                    {cliente.tiene_contrato_mantenimiento && (
-                      <div className="grid grid-cols-3 gap-4 p-4 border rounded-lg">
-                        {cliente.tipo_contrato && (
-                          <div className="space-y-1">
-                            <Label className="text-muted-foreground">Tipo de Contrato</Label>
-                            <p className="font-medium capitalize">{cliente.tipo_contrato}</p>
-                          </div>
-                        )}
-                        {cliente.fecha_alta_contrato && (
-                          <div className="space-y-1">
-                            <Label className="text-muted-foreground">Fecha de Alta</Label>
-                            <p className="font-medium">{new Date(cliente.fecha_alta_contrato).toLocaleDateString()}</p>
-                          </div>
-                        )}
-                        {cliente.fecha_caducidad_contrato && (
-                          <div className="space-y-1">
-                            <Label className="text-muted-foreground">Fecha de Caducidad</Label>
-                            <p className="font-medium">{new Date(cliente.fecha_caducidad_contrato).toLocaleDateString()}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {cliente.tiene_contrato_mantenimiento && (() => {
+                      const fechaCaducidad = cliente.fecha_caducidad_contrato ? new Date(cliente.fecha_caducidad_contrato) : null;
+                      const hoy = new Date();
+                      const estaExpirado = fechaCaducidad ? fechaCaducidad < hoy : false;
+
+                      return (
+                        <div className={`grid grid-cols-3 gap-4 p-4 border rounded-lg ${estaExpirado ? 'border-red-300 bg-red-50' : ''}`}>
+                          {cliente.tipo_contrato && (
+                            <div className="space-y-1">
+                              <Label className="text-muted-foreground">Tipo de Contrato</Label>
+                              <p className={`font-medium capitalize ${estaExpirado ? 'text-red-600' : ''}`}>
+                                {cliente.tipo_contrato}
+                              </p>
+                            </div>
+                          )}
+                          {cliente.fecha_alta_contrato && (
+                            <div className="space-y-1">
+                              <Label className="text-muted-foreground">Fecha de Alta</Label>
+                              <p className="font-medium">{new Date(cliente.fecha_alta_contrato).toLocaleDateString()}</p>
+                            </div>
+                          )}
+                          {cliente.fecha_caducidad_contrato && (
+                            <div className="space-y-1">
+                              <Label className="text-muted-foreground">Fecha de Caducidad</Label>
+                              <p className={`font-medium ${estaExpirado ? 'text-red-600' : ''}`}>
+                                {new Date(cliente.fecha_caducidad_contrato).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                          {estaExpirado && (
+                            <div className="col-span-3 flex items-center gap-2 px-3 py-2 bg-red-100 text-red-800 rounded">
+                              <AlertTriangle className="h-4 w-4" />
+                              <span className="text-sm font-medium">
+                                Contrato expirado
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </TabsContent>
