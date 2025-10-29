@@ -432,17 +432,31 @@ const DetalleCliente = () => {
             </Button>
           </div>
         ) : (
-          <div className="flex gap-2">
-            <Button onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}>
-              <Plus className="h-4 w-4 mr-2" />
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}
+              className="bg-primary hover:bg-primary/90 shadow-md"
+              size="lg"
+            >
+              <Plus className="h-5 w-5 mr-2" />
               Nuevo Ticket
             </Button>
-            <Button onClick={() => setEditMode(true)} variant="outline">
-              <Edit2 className="h-4 w-4 mr-2" />
+            <Button 
+              onClick={() => setEditMode(true)} 
+              variant="outline"
+              className="border-2 hover:bg-accent"
+              size="lg"
+            >
+              <Edit2 className="h-5 w-5 mr-2" />
               Editar
             </Button>
-            <Button onClick={handleDelete} variant="destructive">
-              <Trash2 className="h-4 w-4 mr-2" />
+            <Button 
+              onClick={handleDelete} 
+              variant="outline"
+              className="border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              size="lg"
+            >
+              <Trash2 className="h-5 w-5 mr-2" />
               Eliminar
             </Button>
           </div>
