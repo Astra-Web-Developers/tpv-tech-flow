@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2, Upload, X, Users, Globe, Receipt, Briefcase, FileType, StickyNote, ScrollText } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2, Upload, X, Users, Globe, Receipt, Briefcase, FileType, StickyNote, ScrollText, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
@@ -352,6 +352,27 @@ const DetalleCliente = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm("¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("clientes")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Cliente eliminado correctamente");
+      navigate("/clientes");
+    } catch (error: any) {
+      console.error("Error eliminando cliente:", error);
+      toast.error(error.message || "Error al eliminar cliente");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -419,6 +440,10 @@ const DetalleCliente = () => {
             <Button onClick={() => setEditMode(true)} variant="outline">
               <Edit2 className="h-4 w-4 mr-2" />
               Editar
+            </Button>
+            <Button onClick={handleDelete} variant="destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Eliminar
             </Button>
           </div>
         )}
@@ -609,6 +634,28 @@ const DetalleCliente = () => {
 
               <TabsContent value="empresa" className="space-y-6 mt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Estado Card */}
+                  <Card className="border-2 md:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Estado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                        <Checkbox
+                          id="activo"
+                          checked={cliente.activo}
+                          onCheckedChange={(checked) => setCliente({ ...cliente, activo: checked as boolean })}
+                        />
+                        <Label htmlFor="activo" className="cursor-pointer font-medium text-lg">
+                          Cliente {cliente.activo ? 'Activo' : 'Inactivo'}
+                        </Label>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {/* Logo Card */}
                   <Card className="border-2">
                     <CardHeader>
@@ -724,33 +771,23 @@ const DetalleCliente = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Estado y Fechas Card */}
+                  {/* Fechas Card */}
                   <Card className="border-2 md:col-span-2">
                     <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
-                        Estado y Fechas
+                        Fechas
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                          <Checkbox
-                            id="activo"
-                            checked={cliente.activo}
-                            onCheckedChange={(checked) => setCliente({ ...cliente, activo: checked as boolean })}
-                          />
-                          <Label htmlFor="activo" className="cursor-pointer font-medium">Cliente Activo</Label>
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="fecha_alta_cliente">Fecha de Alta del Cliente</Label>
-                          <Input
-                            id="fecha_alta_cliente"
-                            type="date"
-                            value={cliente.fecha_alta_cliente || ""}
-                            onChange={(e) => setCliente({ ...cliente, fecha_alta_cliente: e.target.value })}
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fecha_alta_cliente">Fecha de Alta del Cliente</Label>
+                        <Input
+                          id="fecha_alta_cliente"
+                          type="date"
+                          value={cliente.fecha_alta_cliente || ""}
+                          onChange={(e) => setCliente({ ...cliente, fecha_alta_cliente: e.target.value })}
+                        />
                       </div>
                     </CardContent>
                   </Card>
