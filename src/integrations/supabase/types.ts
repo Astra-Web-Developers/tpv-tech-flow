@@ -208,6 +208,42 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes_etiquetas: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          etiqueta_id: string
+          id: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          etiqueta_id: string
+          id?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          etiqueta_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_etiquetas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clientes_etiquetas_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "etiquetas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuracion: {
         Row: {
           clave: string
@@ -515,6 +551,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      etiquetas: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
       }
       fichajes: {
         Row: {

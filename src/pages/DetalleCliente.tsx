@@ -49,6 +49,7 @@ import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfigurableSelect } from "@/components/ConfigurableSelect";
+import { EtiquetasManager } from "@/components/EtiquetasManager";
 
 interface Cliente {
   id: string;
@@ -748,6 +749,13 @@ const DetalleCliente = () => {
                           {cliente.activo ? "Activo" : "Inactivo"}
                         </Label>
                       </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Etiquetas Card */}
+                  <Card className="border-2 md:col-span-2">
+                    <CardContent className="pt-6">
+                      <EtiquetasManager clienteId={id!} onUpdate={loadCliente} />
                     </CardContent>
                   </Card>
 

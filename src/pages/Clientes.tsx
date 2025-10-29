@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Phone, Mail, Upload, X, Image as ImageIcon, AlertTriangle, FileX } from "lucide-react";
+import { Plus, Search, Phone, Mail, Upload, X, Image as ImageIcon, AlertTriangle, FileX, Tag } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -20,6 +20,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { logCreate } from "@/lib/auditLog";
+import { Badge } from "@/components/ui/badge";
+
+interface Etiqueta {
+  id: string;
+  nombre: string;
+  color: string;
+}
+
+interface ClienteConEtiquetas extends Cliente {
+  etiquetas?: Etiqueta[];
+}
 
 interface Cliente {
   id: string;
@@ -52,9 +63,11 @@ interface Cliente {
 
 const Clientes = () => {
   const navigate = useNavigate();
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [clientes, setClientes] = useState<ClienteConEtiquetas[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [etiquetasDisponibles, setEtiquetasDisponibles] = useState<Etiqueta[]>([]);
+  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
@@ -92,6 +105,7 @@ const Clientes = () => {
 
   useEffect(() => {
     loadClientes();
+    loadEtiquetas();
   }, []);
 
   const loadClientes = async () => {
@@ -103,12 +117,40 @@ const Clientes = () => {
         .order("nombre");
 
       if (error) throw error;
-      setClientes(data || []);
+
+      // Cargar etiquetas para cada cliente
+      const clientesConEtiquetas = await Promise.all(
+        (data || []).map(async (cliente) => {
+          const { data: etiquetasData } = await supabase
+            .from("clientes_etiquetas")
+            .select("etiqueta_id, etiquetas(id, nombre, color)")
+            .eq("cliente_id", cliente.id);
+
+          const etiquetas = etiquetasData?.map((item: any) => item.etiquetas).filter(Boolean) || [];
+          return { ...cliente, etiquetas };
+        })
+      );
+
+      setClientes(clientesConEtiquetas);
     } catch (error) {
       console.error("Error cargando clientes:", error);
       toast.error("Error al cargar clientes");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEtiquetas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("etiquetas")
+        .select("*")
+        .order("nombre");
+
+      if (error) throw error;
+      setEtiquetasDisponibles(data || []);
+    } catch (error) {
+      console.error("Error cargando etiquetas:", error);
     }
   };
 
@@ -246,12 +288,22 @@ const Clientes = () => {
     }
   };
 
-  const filteredClientes = clientes.filter(
-    (cliente) =>
+  const filteredClientes = clientes.filter((cliente) => {
+    // Filtro por búsqueda de texto
+    const matchesSearch =
       cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cliente.cif?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cliente.telefono?.includes(searchTerm)
-  );
+      cliente.telefono?.includes(searchTerm);
+
+    // Filtro por etiquetas seleccionadas
+    const matchesEtiquetas =
+      etiquetasSeleccionadas.length === 0 ||
+      etiquetasSeleccionadas.some((etiquetaId) =>
+        cliente.etiquetas?.some((e) => e.id === etiquetaId)
+      );
+
+    return matchesSearch && matchesEtiquetas;
+  });
 
   if (loading) {
     return (
@@ -769,14 +821,60 @@ const Clientes = () => {
         </Dialog>
       )}
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar por nombre, CIF o teléfono..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre, CIF o teléfono..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {etiquetasDisponibles.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              Filtrar por etiquetas
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {etiquetasDisponibles.map((etiqueta) => {
+                const isSelected = etiquetasSeleccionadas.includes(etiqueta.id);
+                return (
+                  <Badge
+                    key={etiqueta.id}
+                    style={{
+                      backgroundColor: isSelected ? etiqueta.color : "transparent",
+                      color: isSelected ? "white" : etiqueta.color,
+                      borderColor: etiqueta.color,
+                    }}
+                    className="cursor-pointer border-2 hover:opacity-80 transition-opacity"
+                    onClick={() => {
+                      setEtiquetasSeleccionadas((prev) =>
+                        isSelected
+                          ? prev.filter((id) => id !== etiqueta.id)
+                          : [...prev, etiqueta.id]
+                      );
+                    }}
+                  >
+                    {etiqueta.nombre}
+                  </Badge>
+                );
+              })}
+              {etiquetasSeleccionadas.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEtiquetasSeleccionadas([])}
+                  className="h-6"
+                >
+                  Limpiar filtros
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -828,6 +926,19 @@ const Clientes = () => {
               </CardHeader>
               
               <CardContent className="space-y-3 pb-6">
+                {cliente.etiquetas && cliente.etiquetas.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pb-2 border-b">
+                    {cliente.etiquetas.map((etiqueta) => (
+                      <Badge
+                        key={etiqueta.id}
+                        style={{ backgroundColor: etiqueta.color }}
+                        className="text-xs"
+                      >
+                        {etiqueta.nombre}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 {cliente.telefono && (
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
