@@ -8,9 +8,43 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2, Upload, X, Users, Globe, Receipt, Briefcase, FileType, StickyNote, ScrollText, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  MapPin,
+  Plus,
+  Edit2,
+  Wrench,
+  AlertTriangle,
+  FileX,
+  FileDown,
+  Send,
+  History,
+  CheckCircle2,
+  FileText,
+  Calendar,
+  Building2,
+  Upload,
+  X,
+  Users,
+  Globe,
+  Receipt,
+  Briefcase,
+  FileType,
+  StickyNote,
+  ScrollText,
+  Trash2,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -108,11 +142,7 @@ const DetalleCliente = () => {
 
   const loadCliente = async () => {
     try {
-      const { data, error } = await supabase
-        .from("clientes")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data, error } = await supabase.from("clientes").select("*").eq("id", id).single();
 
       if (error) throw error;
       setCliente(data);
@@ -201,19 +231,16 @@ const DetalleCliente = () => {
   const exportarHistorial = async () => {
     const csv = [
       ["Número", "Título", "Estado", "Fecha Creación"],
-      ...historialCompleto.map(t => [
-        t.numero,
-        t.titulo,
-        t.estado,
-        new Date(t.fecha_creacion).toLocaleDateString()
-      ])
-    ].map(row => row.join(",")).join("\n");
+      ...historialCompleto.map((t) => [t.numero, t.titulo, t.estado, new Date(t.fecha_creacion).toLocaleDateString()]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `historial-tickets-${cliente?.nombre || 'cliente'}.csv`;
+    a.download = `historial-tickets-${cliente?.nombre || "cliente"}.csv`;
     a.click();
 
     // Registrar exportación en auditoría
@@ -232,12 +259,12 @@ const DetalleCliente = () => {
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Por favor selecciona un archivo de imagen');
+      if (!file.type.startsWith("image/")) {
+        toast.error("Por favor selecciona un archivo de imagen");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('El archivo no puede superar los 5MB');
+        toast.error("El archivo no puede superar los 5MB");
         return;
       }
       setLogoFile(file);
@@ -251,34 +278,32 @@ const DetalleCliente = () => {
 
   const clearLogo = () => {
     setLogoFile(null);
-    setLogoPreview('');
+    setLogoPreview("");
     if (cliente) {
-      setCliente({ ...cliente, logo_url: '' });
+      setCliente({ ...cliente, logo_url: "" });
     }
   };
 
   const uploadLogoToSupabase = async (file: File): Promise<string | null> => {
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = `logos/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('client-logos')
-        .upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from("client-logos").upload(filePath, file);
 
       if (uploadError) {
-        console.error('Error uploading logo:', uploadError);
+        console.error("Error uploading logo:", uploadError);
         return null;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('client-logos')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("client-logos").getPublicUrl(filePath);
 
       return publicUrl;
     } catch (error) {
-      console.error('Error in uploadLogoToSupabase:', error);
+      console.error("Error in uploadLogoToSupabase:", error);
       return null;
     }
   };
@@ -305,10 +330,7 @@ const DetalleCliente = () => {
         logo_url: logoUrl,
       };
 
-      const { error } = await supabase
-        .from("clientes")
-        .update(updatedCliente)
-        .eq("id", id);
+      const { error } = await supabase.from("clientes").update(updatedCliente).eq("id", id);
 
       if (error) throw error;
 
@@ -320,7 +342,7 @@ const DetalleCliente = () => {
       toast.success("Cliente actualizado");
       setEditMode(false);
       setLogoFile(null);
-      setLogoPreview('');
+      setLogoPreview("");
       loadCliente();
     } catch (error: any) {
       console.error("Error actualizando cliente:", error);
@@ -332,13 +354,13 @@ const DetalleCliente = () => {
 
   const agregarEquipo = async () => {
     try {
-      const { error } = await supabase
-        .from("equipos")
-        .insert([{
+      const { error } = await supabase.from("equipos").insert([
+        {
           cliente_id: id,
           ...nuevoEquipo,
           fecha_instalacion: new Date().toISOString(),
-        }]);
+        },
+      ]);
 
       if (error) throw error;
 
@@ -358,10 +380,7 @@ const DetalleCliente = () => {
     }
 
     try {
-      const { error } = await supabase
-        .from("clientes")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("clientes").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -402,12 +421,12 @@ const DetalleCliente = () => {
           </Button>
           {cliente.logo_url && (
             <div className="w-16 h-16 rounded-lg border-2 border-border overflow-hidden flex items-center justify-center bg-background">
-              <img 
-                src={cliente.logo_url} 
-                alt={`Logo ${cliente.nombre}`} 
+              <img
+                src={cliente.logo_url}
+                alt={`Logo ${cliente.nombre}`}
                 className="w-full h-full object-contain p-1"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none";
                 }}
               />
             </div>
@@ -419,12 +438,15 @@ const DetalleCliente = () => {
         </div>
         {editMode ? (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => {
-              setEditMode(false);
-              setLogoFile(null);
-              setLogoPreview('');
-              loadCliente();
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditMode(false);
+                setLogoFile(null);
+                setLogoPreview("");
+                loadCliente();
+              }}
+            >
               Cancelar
             </Button>
             <Button onClick={handleUpdate} disabled={uploadingLogo}>
@@ -433,7 +455,7 @@ const DetalleCliente = () => {
           </div>
         ) : (
           <div className="flex flex-wrap gap-3">
-            <Button 
+            <Button
               onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}
               className="bg-primary hover:bg-primary/90 shadow-md"
               size="lg"
@@ -441,23 +463,17 @@ const DetalleCliente = () => {
               <Plus className="h-5 w-5 mr-2" />
               Nuevo Ticket
             </Button>
-            <Button 
-              onClick={() => setEditMode(true)} 
-              variant="outline"
-              className="border-2 hover:bg-accent"
-              size="lg"
-            >
+            <Button onClick={() => setEditMode(true)} variant="outline" className="border-2 hover:bg-accent" size="lg">
               <Edit2 className="h-5 w-5 mr-2" />
               Editar
             </Button>
-            <Button 
-              onClick={handleDelete} 
+            <Button
+              onClick={handleDelete}
               variant="outline"
               className="border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
               size="lg"
             >
               <Trash2 className="h-5 w-5 mr-2" />
-              Eliminar
             </Button>
           </div>
         )}
@@ -488,9 +504,7 @@ const DetalleCliente = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-blue-900">
-                  Tickets Abiertos ({ticketsAbiertos.length})
-                </CardTitle>
+                <CardTitle className="text-blue-900">Tickets Abiertos ({ticketsAbiertos.length})</CardTitle>
               </div>
               <Button size="sm" variant="outline" onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -507,7 +521,9 @@ const DetalleCliente = () => {
                   onClick={() => navigate(`/tickets/${ticket.id}`)}
                 >
                   <div className="flex-1">
-                    <p className="font-semibold text-blue-900">#{ticket.numero} - {ticket.titulo}</p>
+                    <p className="font-semibold text-blue-900">
+                      #{ticket.numero} - {ticket.titulo}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       Creado: {new Date(ticket.fecha_creacion).toLocaleDateString()}
                     </p>
@@ -541,20 +557,20 @@ const DetalleCliente = () => {
                 const estaVencido = diasRestantes <= 0;
 
                 return (
-                  <div 
-                    key={contrato.id} 
+                  <div
+                    key={contrato.id}
                     className={`p-4 border-2 rounded-lg ${
-                      estaVencido ? 'border-red-300 bg-red-50' : 
-                      estaPorVencer ? 'border-orange-300 bg-orange-50' : 
-                      'border-green-300 bg-green-50'
+                      estaVencido
+                        ? "border-red-300 bg-red-50"
+                        : estaPorVencer
+                          ? "border-orange-300 bg-orange-50"
+                          : "border-green-300 bg-green-50"
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
                         <p className="font-semibold text-lg">{contrato.tipo}</p>
-                        {contrato.notas && (
-                          <p className="text-sm text-muted-foreground mt-1">{contrato.notas}</p>
-                        )}
+                        {contrato.notas && <p className="text-sm text-muted-foreground mt-1">{contrato.notas}</p>}
                       </div>
                       <Badge variant={contrato.activo ? "default" : "secondary"}>
                         {contrato.activo ? "Activo" : "Inactivo"}
@@ -572,26 +588,27 @@ const DetalleCliente = () => {
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-muted-foreground">Vencimiento</p>
-                          <p className={`font-medium ${
-                            estaVencido ? 'text-red-600' : 
-                            estaPorVencer ? 'text-orange-600' : 
-                            'text-green-600'
-                          }`}>
+                          <p
+                            className={`font-medium ${
+                              estaVencido ? "text-red-600" : estaPorVencer ? "text-orange-600" : "text-green-600"
+                            }`}
+                          >
                             {fechaCaducidad.toLocaleDateString()}
                           </p>
                         </div>
                       </div>
                     </div>
                     {(estaPorVencer || estaVencido) && (
-                      <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded ${
-                        estaVencido ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'
-                      }`}>
+                      <div
+                        className={`mt-3 flex items-center gap-2 px-3 py-2 rounded ${
+                          estaVencido ? "bg-red-100 text-red-800" : "bg-orange-100 text-orange-800"
+                        }`}
+                      >
                         <AlertTriangle className="h-4 w-4" />
                         <span className="text-sm font-medium">
-                          {estaVencido 
-                            ? `Vencido hace ${Math.abs(diasRestantes)} días` 
-                            : `Vence en ${diasRestantes} días`
-                          }
+                          {estaVencido
+                            ? `Vencido hace ${Math.abs(diasRestantes)} días`
+                            : `Vence en ${diasRestantes} días`}
                         </span>
                       </div>
                     )}
@@ -664,7 +681,7 @@ const DetalleCliente = () => {
                           onCheckedChange={(checked) => setCliente({ ...cliente, activo: checked as boolean })}
                         />
                         <Label htmlFor="activo" className="cursor-pointer font-medium text-lg">
-                          {cliente.activo ? 'Activo' : 'Inactivo'}
+                          {cliente.activo ? "Activo" : "Inactivo"}
                         </Label>
                       </div>
                     </CardContent>
@@ -704,9 +721,7 @@ const DetalleCliente = () => {
                                   <X className="h-4 w-4" />
                                 </Button>
                                 {logoFile && (
-                                  <p className="text-xs text-center text-muted-foreground mt-2">
-                                    {logoFile.name}
-                                  </p>
+                                  <p className="text-xs text-center text-muted-foreground mt-2">{logoFile.name}</p>
                                 )}
                               </div>
                             ) : (
@@ -740,7 +755,7 @@ const DetalleCliente = () => {
                                 alt="Logo preview"
                                 className="max-h-32 mx-auto object-contain rounded"
                                 onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.style.display = "none";
                                 }}
                               />
                             </div>
@@ -761,25 +776,25 @@ const DetalleCliente = () => {
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <Label>Nombre de la Empresa *</Label>
-                        <Input 
-                          value={cliente.nombre} 
-                          onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} 
-                          required 
+                        <Input
+                          value={cliente.nombre}
+                          onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
+                          required
                           className="font-medium"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Nombre Fiscal</Label>
-                        <Input 
-                          value={cliente.nombre_fiscal || ""} 
-                          onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })} 
+                        <Input
+                          value={cliente.nombre_fiscal || ""}
+                          onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>CIF/NIF</Label>
-                        <Input 
-                          value={cliente.cif || ""} 
-                          onChange={(e) => setCliente({ ...cliente, cif: e.target.value })} 
+                        <Input
+                          value={cliente.cif || ""}
+                          onChange={(e) => setCliente({ ...cliente, cif: e.target.value })}
                         />
                       </div>
                     </CardContent>
@@ -821,9 +836,9 @@ const DetalleCliente = () => {
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <Label>Persona de Contacto</Label>
-                        <Input 
-                          value={cliente.persona_contacto || ""} 
-                          onChange={(e) => setCliente({ ...cliente, persona_contacto: e.target.value })} 
+                        <Input
+                          value={cliente.persona_contacto || ""}
+                          onChange={(e) => setCliente({ ...cliente, persona_contacto: e.target.value })}
                           placeholder="Nombre del contacto"
                         />
                       </div>
@@ -832,9 +847,9 @@ const DetalleCliente = () => {
                           <Phone className="h-3 w-3" />
                           Teléfono
                         </Label>
-                        <Input 
-                          value={cliente.telefono || ""} 
-                          onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })} 
+                        <Input
+                          value={cliente.telefono || ""}
+                          onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
                           placeholder="+34 123 456 789"
                         />
                       </div>
@@ -843,10 +858,10 @@ const DetalleCliente = () => {
                           <Mail className="h-3 w-3" />
                           Email
                         </Label>
-                        <Input 
-                          type="email" 
-                          value={cliente.email || ""} 
-                          onChange={(e) => setCliente({ ...cliente, email: e.target.value })} 
+                        <Input
+                          type="email"
+                          value={cliente.email || ""}
+                          onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
                           placeholder="contacto@empresa.com"
                         />
                       </div>
@@ -864,9 +879,9 @@ const DetalleCliente = () => {
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <Label>Nombre del Encargado</Label>
-                        <Input 
-                          value={cliente.nombre_encargado || ""} 
-                          onChange={(e) => setCliente({ ...cliente, nombre_encargado: e.target.value })} 
+                        <Input
+                          value={cliente.nombre_encargado || ""}
+                          onChange={(e) => setCliente({ ...cliente, nombre_encargado: e.target.value })}
                           placeholder="Nombre del encargado"
                         />
                       </div>
@@ -875,9 +890,9 @@ const DetalleCliente = () => {
                           <Phone className="h-3 w-3" />
                           Teléfono del Encargado
                         </Label>
-                        <Input 
-                          value={cliente.telefono_encargado || ""} 
-                          onChange={(e) => setCliente({ ...cliente, telefono_encargado: e.target.value })} 
+                        <Input
+                          value={cliente.telefono_encargado || ""}
+                          onChange={(e) => setCliente({ ...cliente, telefono_encargado: e.target.value })}
                           placeholder="+34 123 456 789"
                         />
                       </div>
@@ -898,33 +913,33 @@ const DetalleCliente = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2 md:col-span-2">
                         <Label>Dirección</Label>
-                        <Input 
-                          value={cliente.direccion || ""} 
-                          onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })} 
+                        <Input
+                          value={cliente.direccion || ""}
+                          onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })}
                           placeholder="Calle, número, piso..."
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Código Postal</Label>
-                        <Input 
-                          value={cliente.codigo_postal || ""} 
-                          onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })} 
+                        <Input
+                          value={cliente.codigo_postal || ""}
+                          onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })}
                           placeholder="00000"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Población</Label>
-                        <Input 
-                          value={cliente.poblacion || ""} 
-                          onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })} 
+                        <Input
+                          value={cliente.poblacion || ""}
+                          onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })}
                           placeholder="Población"
                         />
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <Label>Provincia</Label>
-                        <Input 
-                          value={cliente.provincia || ""} 
-                          onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })} 
+                        <Input
+                          value={cliente.provincia || ""}
+                          onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })}
                           placeholder="Provincia"
                         />
                       </div>
@@ -945,8 +960,8 @@ const DetalleCliente = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label>Selector Fiscal</Label>
-                        <Select 
-                          value={cliente.selector_fiscal || ""} 
+                        <Select
+                          value={cliente.selector_fiscal || ""}
                           onValueChange={(value) => setCliente({ ...cliente, selector_fiscal: value })}
                         >
                           <SelectTrigger>
@@ -961,17 +976,17 @@ const DetalleCliente = () => {
                       </div>
                       <div className="space-y-2">
                         <Label>R. IVA</Label>
-                        <Input 
-                          value={cliente.r_iva || ""} 
-                          onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })} 
+                        <Input
+                          value={cliente.r_iva || ""}
+                          onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })}
                           placeholder="R. IVA"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Epígrafe</Label>
-                        <Input 
-                          value={cliente.epigrafe || ""} 
-                          onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })} 
+                        <Input
+                          value={cliente.epigrafe || ""}
+                          onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })}
                           placeholder="Epígrafe"
                         />
                       </div>
@@ -992,9 +1007,9 @@ const DetalleCliente = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2 md:col-span-2">
                         <Label>Nombre de la Asesoría</Label>
-                        <Input 
-                          value={cliente.nombre_asesoria || ""} 
-                          onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })} 
+                        <Input
+                          value={cliente.nombre_asesoria || ""}
+                          onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })}
                           placeholder="Nombre de la asesoría"
                         />
                       </div>
@@ -1003,17 +1018,17 @@ const DetalleCliente = () => {
                           <Phone className="h-3 w-3" />
                           Teléfono Asesoría
                         </Label>
-                        <Input 
-                          value={cliente.telefono_asesoria || ""} 
-                          onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })} 
+                        <Input
+                          value={cliente.telefono_asesoria || ""}
+                          onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })}
                           placeholder="+34 123 456 789"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label>Persona de Contacto</Label>
-                        <Input 
-                          value={cliente.persona_contacto_asesoria || ""} 
-                          onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })} 
+                        <Input
+                          value={cliente.persona_contacto_asesoria || ""}
+                          onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })}
                           placeholder="Nombre del contacto"
                         />
                       </div>
@@ -1036,9 +1051,7 @@ const DetalleCliente = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         Los equipos se pueden gestionar desde la sección de equipos en la vista de solo lectura.
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Sal del modo edición para gestionar equipos
-                      </p>
+                      <p className="text-xs text-muted-foreground">Sal del modo edición para gestionar equipos</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1058,9 +1071,7 @@ const DetalleCliente = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         Los archivos PDF se pueden gestionar desde la sección de documentos en la vista de solo lectura.
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Sal del modo edición para gestionar documentos
-                      </p>
+                      <p className="text-xs text-muted-foreground">Sal del modo edición para gestionar documentos</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1077,9 +1088,9 @@ const DetalleCliente = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Textarea 
-                        value={cliente.informacion_destacada || ""} 
-                        onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })} 
+                      <Textarea
+                        value={cliente.informacion_destacada || ""}
+                        onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })}
                         rows={3}
                         placeholder="Información importante o destacada del cliente..."
                         className="bg-background"
@@ -1096,9 +1107,9 @@ const DetalleCliente = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Textarea 
-                        value={cliente.notas_especiales || ""} 
-                        onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })} 
+                      <Textarea
+                        value={cliente.notas_especiales || ""}
+                        onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })}
                         rows={3}
                         placeholder="Notas especiales sobre el cliente..."
                       />
@@ -1114,9 +1125,9 @@ const DetalleCliente = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Textarea 
-                        value={cliente.notas_adicionales || ""} 
-                        onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })} 
+                      <Textarea
+                        value={cliente.notas_adicionales || ""}
+                        onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })}
                         rows={3}
                         placeholder="Otras notas sobre el cliente..."
                       />
@@ -1132,9 +1143,9 @@ const DetalleCliente = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <Textarea 
-                        value={cliente.notas || ""} 
-                        onChange={(e) => setCliente({ ...cliente, notas: e.target.value })} 
+                      <Textarea
+                        value={cliente.notas || ""}
+                        onChange={(e) => setCliente({ ...cliente, notas: e.target.value })}
                         rows={4}
                         placeholder="Notas generales del cliente..."
                       />
@@ -1156,7 +1167,9 @@ const DetalleCliente = () => {
                       <Checkbox
                         id="tiene_contrato_mantenimiento"
                         checked={cliente.tiene_contrato_mantenimiento}
-                        onCheckedChange={(checked) => setCliente({ ...cliente, tiene_contrato_mantenimiento: checked as boolean })}
+                        onCheckedChange={(checked) =>
+                          setCliente({ ...cliente, tiene_contrato_mantenimiento: checked as boolean })
+                        }
                       />
                       <Label htmlFor="tiene_contrato_mantenimiento" className="cursor-pointer font-medium">
                         Tiene Contrato de Mantenimiento
@@ -1167,8 +1180,8 @@ const DetalleCliente = () => {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 border-2 border-primary/20 rounded-lg bg-primary/5">
                         <div className="space-y-2">
                           <Label>Tipo de Contrato</Label>
-                          <Select 
-                            value={cliente.tipo_contrato || ""} 
+                          <Select
+                            value={cliente.tipo_contrato || ""}
                             onValueChange={(value) => setCliente({ ...cliente, tipo_contrato: value })}
                           >
                             <SelectTrigger className="bg-background">
@@ -1235,12 +1248,12 @@ const DetalleCliente = () => {
                   <div className="grid grid-cols-2 gap-4">
                     {cliente.logo_url && (
                       <div className="col-span-2 flex justify-center">
-                        <img 
-                          src={cliente.logo_url} 
+                        <img
+                          src={cliente.logo_url}
                           alt={`Logo ${cliente.nombre}`}
                           className="max-h-32 object-contain rounded border p-2"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.style.display = "none";
                           }}
                         />
                       </div>
@@ -1480,8 +1493,12 @@ const DetalleCliente = () => {
                             <div>
                               <p className="font-semibold">{equipo.tipo}</p>
                               {equipo.marca && <p className="text-sm text-muted-foreground">Marca: {equipo.marca}</p>}
-                              {equipo.modelo && <p className="text-sm text-muted-foreground">Modelo: {equipo.modelo}</p>}
-                              {equipo.numero_serie && <p className="text-sm text-muted-foreground">S/N: {equipo.numero_serie}</p>}
+                              {equipo.modelo && (
+                                <p className="text-sm text-muted-foreground">Modelo: {equipo.modelo}</p>
+                              )}
+                              {equipo.numero_serie && (
+                                <p className="text-sm text-muted-foreground">S/N: {equipo.numero_serie}</p>
+                              )}
                               {equipo.fecha_instalacion && (
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Instalado: {new Date(equipo.fecha_instalacion).toLocaleDateString()}
@@ -1547,46 +1564,51 @@ const DetalleCliente = () => {
                       </Badge>
                     </div>
 
-                    {cliente.tiene_contrato_mantenimiento && (() => {
-                      const fechaCaducidad = cliente.fecha_caducidad_contrato ? new Date(cliente.fecha_caducidad_contrato) : null;
-                      const hoy = new Date();
-                      const estaExpirado = fechaCaducidad ? fechaCaducidad < hoy : false;
+                    {cliente.tiene_contrato_mantenimiento &&
+                      (() => {
+                        const fechaCaducidad = cliente.fecha_caducidad_contrato
+                          ? new Date(cliente.fecha_caducidad_contrato)
+                          : null;
+                        const hoy = new Date();
+                        const estaExpirado = fechaCaducidad ? fechaCaducidad < hoy : false;
 
-                      return (
-                        <div className={`grid grid-cols-3 gap-4 p-4 border rounded-lg ${estaExpirado ? 'border-red-300 bg-red-50' : ''}`}>
-                          {cliente.tipo_contrato && (
-                            <div className="space-y-1">
-                              <Label className="text-muted-foreground">Tipo de Contrato</Label>
-                              <p className={`font-medium capitalize ${estaExpirado ? 'text-red-600' : ''}`}>
-                                {cliente.tipo_contrato}
-                              </p>
-                            </div>
-                          )}
-                          {cliente.fecha_alta_contrato && (
-                            <div className="space-y-1">
-                              <Label className="text-muted-foreground">Fecha de Alta</Label>
-                              <p className="font-medium">{new Date(cliente.fecha_alta_contrato).toLocaleDateString()}</p>
-                            </div>
-                          )}
-                          {cliente.fecha_caducidad_contrato && (
-                            <div className="space-y-1">
-                              <Label className="text-muted-foreground">Fecha de Caducidad</Label>
-                              <p className={`font-medium ${estaExpirado ? 'text-red-600' : ''}`}>
-                                {new Date(cliente.fecha_caducidad_contrato).toLocaleDateString()}
-                              </p>
-                            </div>
-                          )}
-                          {estaExpirado && (
-                            <div className="col-span-3 flex items-center gap-2 px-3 py-2 bg-red-100 text-red-800 rounded">
-                              <AlertTriangle className="h-4 w-4" />
-                              <span className="text-sm font-medium">
-                                Contrato expirado
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
+                        return (
+                          <div
+                            className={`grid grid-cols-3 gap-4 p-4 border rounded-lg ${estaExpirado ? "border-red-300 bg-red-50" : ""}`}
+                          >
+                            {cliente.tipo_contrato && (
+                              <div className="space-y-1">
+                                <Label className="text-muted-foreground">Tipo de Contrato</Label>
+                                <p className={`font-medium capitalize ${estaExpirado ? "text-red-600" : ""}`}>
+                                  {cliente.tipo_contrato}
+                                </p>
+                              </div>
+                            )}
+                            {cliente.fecha_alta_contrato && (
+                              <div className="space-y-1">
+                                <Label className="text-muted-foreground">Fecha de Alta</Label>
+                                <p className="font-medium">
+                                  {new Date(cliente.fecha_alta_contrato).toLocaleDateString()}
+                                </p>
+                              </div>
+                            )}
+                            {cliente.fecha_caducidad_contrato && (
+                              <div className="space-y-1">
+                                <Label className="text-muted-foreground">Fecha de Caducidad</Label>
+                                <p className={`font-medium ${estaExpirado ? "text-red-600" : ""}`}>
+                                  {new Date(cliente.fecha_caducidad_contrato).toLocaleDateString()}
+                                </p>
+                              </div>
+                            )}
+                            {estaExpirado && (
+                              <div className="col-span-3 flex items-center gap-2 px-3 py-2 bg-red-100 text-red-800 rounded">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span className="text-sm font-medium">Contrato expirado</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                   </div>
                 </div>
               </TabsContent>
@@ -1628,7 +1650,9 @@ const DetalleCliente = () => {
                     onClick={() => navigate(`/tickets/${ticket.id}`)}
                   >
                     <div className="flex-1">
-                      <p className="font-medium">#{ticket.numero} - {ticket.titulo}</p>
+                      <p className="font-medium">
+                        #{ticket.numero} - {ticket.titulo}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(ticket.fecha_creacion).toLocaleDateString()}
                       </p>
@@ -1648,10 +1672,7 @@ const DetalleCliente = () => {
               </div>
               {historialCompleto.length > 10 && (
                 <div className="mt-4 text-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAllTickets(!showAllTickets)}
-                  >
+                  <Button variant="outline" onClick={() => setShowAllTickets(!showAllTickets)}>
                     {showAllTickets ? "Mostrar menos" : `Mostrar todos (${historialCompleto.length})`}
                   </Button>
                 </div>
@@ -1664,7 +1685,7 @@ const DetalleCliente = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-green-600">
-                      {historialCompleto.filter(t => t.estado === "finalizado").length}
+                      {historialCompleto.filter((t) => t.estado === "finalizado").length}
                     </p>
                     <p className="text-sm text-muted-foreground">Finalizados</p>
                   </div>
