@@ -24,6 +24,7 @@ import { logCreate } from "@/lib/auditLog";
 interface Cliente {
   id: string;
   nombre: string;
+  nombre_fiscal: string | null;
   cif: string | null;
   telefono: string | null;
   email: string | null;
@@ -799,6 +800,9 @@ const Clientes = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
                     <CardTitle>{cliente.nombre}</CardTitle>
+                    {cliente.nombre_fiscal && (
+                      <CardDescription className="font-medium">{cliente.nombre_fiscal}</CardDescription>
+                    )}
                     {cliente.cif && (
                       <CardDescription>CIF: {cliente.cif}</CardDescription>
                     )}
@@ -839,10 +843,12 @@ const Clientes = () => {
                   </div>
                 )}
                 {cliente.direccion && (
-                  <p className="text-sm text-muted-foreground">{cliente.direccion}</p>
-                )}
-                {cliente.poblacion && (
-                  <p className="text-sm text-muted-foreground">{cliente.poblacion}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {cliente.direccion}
+                    {cliente.codigo_postal && `, ${cliente.codigo_postal}`}
+                    {cliente.poblacion && ` - ${cliente.poblacion}`}
+                    {cliente.provincia && ` (${cliente.provincia})`}
+                  </p>
                 )}
               </CardContent>
             </Card>
