@@ -470,10 +470,10 @@ const DetalleCliente = () => {
             <Button
               onClick={handleDelete}
               variant="outline"
-              className="border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-              size="lg"
+              className="border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-md"
+              size="icon"
             >
-              <Trash2 className="h-5 w-5 mr-2" />
+              <Trash2 className="h-5 w-5" />
             </Button>
           </div>
         )}
