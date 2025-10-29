@@ -643,14 +643,14 @@ const DetalleCliente = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                      <div className="flex items-center space-x-2">
                         <Checkbox
                           id="activo"
                           checked={cliente.activo}
                           onCheckedChange={(checked) => setCliente({ ...cliente, activo: checked as boolean })}
                         />
                         <Label htmlFor="activo" className="cursor-pointer font-medium text-lg">
-                          Cliente {cliente.activo ? 'Activo' : 'Inactivo'}
+                          {cliente.activo ? 'Activo' : 'Inactivo'}
                         </Label>
                       </div>
                     </CardContent>
