@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2, Upload, X } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2, Upload, X, Users, Globe, Receipt, Briefcase, FileType, StickyNote, ScrollText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
@@ -568,31 +568,63 @@ const DetalleCliente = () => {
         <Card>
           <CardContent className="pt-6">
             <Tabs defaultValue="empresa" className="w-full">
-              <TabsList className="grid w-full grid-cols-9 text-xs">
-                <TabsTrigger value="empresa">Empresa</TabsTrigger>
-                <TabsTrigger value="contactos">Contactos</TabsTrigger>
-                <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
-                <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
-                <TabsTrigger value="asesoria">Asesoría</TabsTrigger>
-                <TabsTrigger value="equipos">Equipos</TabsTrigger>
-                <TabsTrigger value="archivos">Archivos</TabsTrigger>
-                <TabsTrigger value="notas">Notas</TabsTrigger>
-                <TabsTrigger value="contrato">Contrato</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-9 gap-1">
+                <TabsTrigger value="empresa" className="flex flex-col gap-1 py-3">
+                  <Building2 className="h-4 w-4" />
+                  <span className="text-xs">Empresa</span>
+                </TabsTrigger>
+                <TabsTrigger value="contactos" className="flex flex-col gap-1 py-3">
+                  <Users className="h-4 w-4" />
+                  <span className="text-xs">Contactos</span>
+                </TabsTrigger>
+                <TabsTrigger value="ubicacion" className="flex flex-col gap-1 py-3">
+                  <MapPin className="h-4 w-4" />
+                  <span className="text-xs">Ubicación</span>
+                </TabsTrigger>
+                <TabsTrigger value="fiscal" className="flex flex-col gap-1 py-3">
+                  <Receipt className="h-4 w-4" />
+                  <span className="text-xs">Fiscal</span>
+                </TabsTrigger>
+                <TabsTrigger value="asesoria" className="flex flex-col gap-1 py-3">
+                  <Briefcase className="h-4 w-4" />
+                  <span className="text-xs">Asesoría</span>
+                </TabsTrigger>
+                <TabsTrigger value="equipos" className="flex flex-col gap-1 py-3">
+                  <Wrench className="h-4 w-4" />
+                  <span className="text-xs">Equipos</span>
+                </TabsTrigger>
+                <TabsTrigger value="archivos" className="flex flex-col gap-1 py-3">
+                  <FileType className="h-4 w-4" />
+                  <span className="text-xs">Archivos</span>
+                </TabsTrigger>
+                <TabsTrigger value="notas" className="flex flex-col gap-1 py-3">
+                  <StickyNote className="h-4 w-4" />
+                  <span className="text-xs">Notas</span>
+                </TabsTrigger>
+                <TabsTrigger value="contrato" className="flex flex-col gap-1 py-3">
+                  <ScrollText className="h-4 w-4" />
+                  <span className="text-xs">Contrato</span>
+                </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="empresa" className="space-y-4 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Datos de la Empresa</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <Label>Logo de la Empresa</Label>
+              <TabsContent value="empresa" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Logo Card */}
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Logo de la Empresa
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <Tabs defaultValue="upload" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger value="upload">Subir Archivo</TabsTrigger>
                           <TabsTrigger value="url">URL</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="upload" className="space-y-3">
+                        <TabsContent value="upload" className="space-y-3 mt-4">
                           <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
                             {logoPreview || cliente.logo_url ? (
                               <div className="relative w-full">
@@ -605,7 +637,7 @@ const DetalleCliente = () => {
                                   type="button"
                                   variant="destructive"
                                   size="icon"
-                                  className="absolute top-0 right-0"
+                                  className="absolute -top-2 -right-2"
                                   onClick={clearLogo}
                                 >
                                   <X className="h-4 w-4" />
@@ -619,7 +651,7 @@ const DetalleCliente = () => {
                             ) : (
                               <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
                                 <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                                <p className="text-sm font-medium">Click para seleccionar imagen</p>
+                                <p className="text-sm font-medium">Click para seleccionar</p>
                                 <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG hasta 5MB</p>
                               </label>
                             )}
@@ -633,7 +665,7 @@ const DetalleCliente = () => {
                           </div>
                         </TabsContent>
 
-                        <TabsContent value="url" className="space-y-3">
+                        <TabsContent value="url" className="space-y-3 mt-4">
                           <Input
                             type="url"
                             placeholder="https://ejemplo.com/logo.png"
@@ -641,7 +673,7 @@ const DetalleCliente = () => {
                             onChange={(e) => setCliente({ ...cliente, logo_url: e.target.value })}
                           />
                           {cliente.logo_url && (
-                            <div className="relative">
+                            <div className="relative border-2 border-dashed rounded-lg p-4">
                               <img
                                 src={cliente.logo_url}
                                 alt="Logo preview"
@@ -654,32 +686,63 @@ const DetalleCliente = () => {
                           )}
                         </TabsContent>
                       </Tabs>
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    <div className="space-y-2 col-span-2">
-                      <Label>Nombre de la Empresa *</Label>
-                      <Input value={cliente.nombre} onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Nombre Fiscal</Label>
-                      <Input value={cliente.nombre_fiscal || ""} onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>CIF/NIF</Label>
-                      <Input value={cliente.cif || ""} onChange={(e) => setCliente({ ...cliente, cif: e.target.value })} />
-                    </div>
+                  {/* Datos Básicos Card */}
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Datos Básicos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Nombre de la Empresa *</Label>
+                        <Input 
+                          value={cliente.nombre} 
+                          onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} 
+                          required 
+                          className="font-medium"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nombre Fiscal</Label>
+                        <Input 
+                          value={cliente.nombre_fiscal || ""} 
+                          onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })} 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>CIF/NIF</Label>
+                        <Input 
+                          value={cliente.cif || ""} 
+                          onChange={(e) => setCliente({ ...cliente, cif: e.target.value })} 
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                    <div className="space-y-2 col-span-2">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="flex items-center space-x-2">
+                  {/* Estado y Fechas Card */}
+                  <Card className="border-2 md:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Estado y Fechas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex items-center space-x-2 p-4 border rounded-lg">
                           <Checkbox
                             id="activo"
                             checked={cliente.activo}
                             onCheckedChange={(checked) => setCliente({ ...cliente, activo: checked as boolean })}
                           />
-                          <Label htmlFor="activo" className="cursor-pointer">Cliente Activo</Label>
+                          <Label htmlFor="activo" className="cursor-pointer font-medium">Cliente Activo</Label>
                         </div>
-                        <div className="space-y-2 col-span-2">
+                        <div className="space-y-2 md:col-span-2">
                           <Label htmlFor="fecha_alta_cliente">Fecha de Alta del Cliente</Label>
                           <Input
                             id="fecha_alta_cliente"
@@ -689,174 +752,375 @@ const DetalleCliente = () => {
                           />
                         </div>
                       </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
 
-              <TabsContent value="contactos" className="space-y-4 mt-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label>Persona de Contacto</Label>
-                    <Input value={cliente.persona_contacto || ""} onChange={(e) => setCliente({ ...cliente, persona_contacto: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Teléfono</Label>
-                    <Input value={cliente.telefono || ""} onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input type="email" value={cliente.email || ""} onChange={(e) => setCliente({ ...cliente, email: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nombre del Encargado</Label>
-                    <Input value={cliente.nombre_encargado || ""} onChange={(e) => setCliente({ ...cliente, nombre_encargado: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Teléfono del Encargado</Label>
-                    <Input value={cliente.telefono_encargado || ""} onChange={(e) => setCliente({ ...cliente, telefono_encargado: e.target.value })} />
-                  </div>
+              <TabsContent value="contactos" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contacto Principal Card */}
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Contacto Principal
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Persona de Contacto</Label>
+                        <Input 
+                          value={cliente.persona_contacto || ""} 
+                          onChange={(e) => setCliente({ ...cliente, persona_contacto: e.target.value })} 
+                          placeholder="Nombre del contacto"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Phone className="h-3 w-3" />
+                          Teléfono
+                        </Label>
+                        <Input 
+                          value={cliente.telefono || ""} 
+                          onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })} 
+                          placeholder="+34 123 456 789"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Mail className="h-3 w-3" />
+                          Email
+                        </Label>
+                        <Input 
+                          type="email" 
+                          value={cliente.email || ""} 
+                          onChange={(e) => setCliente({ ...cliente, email: e.target.value })} 
+                          placeholder="contacto@empresa.com"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Encargado Card */}
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Encargado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Nombre del Encargado</Label>
+                        <Input 
+                          value={cliente.nombre_encargado || ""} 
+                          onChange={(e) => setCliente({ ...cliente, nombre_encargado: e.target.value })} 
+                          placeholder="Nombre del encargado"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Phone className="h-3 w-3" />
+                          Teléfono del Encargado
+                        </Label>
+                        <Input 
+                          value={cliente.telefono_encargado || ""} 
+                          onChange={(e) => setCliente({ ...cliente, telefono_encargado: e.target.value })} 
+                          placeholder="+34 123 456 789"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
 
               <TabsContent value="ubicacion" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Dirección</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <Label>Dirección</Label>
-                      <Input value={cliente.direccion || ""} onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })} />
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Dirección Completa
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Dirección</Label>
+                        <Input 
+                          value={cliente.direccion || ""} 
+                          onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })} 
+                          placeholder="Calle, número, piso..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Código Postal</Label>
+                        <Input 
+                          value={cliente.codigo_postal || ""} 
+                          onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })} 
+                          placeholder="00000"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Población</Label>
+                        <Input 
+                          value={cliente.poblacion || ""} 
+                          onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })} 
+                          placeholder="Población"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Provincia</Label>
+                        <Input 
+                          value={cliente.provincia || ""} 
+                          onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })} 
+                          placeholder="Provincia"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Código Postal</Label>
-                      <Input value={cliente.codigo_postal || ""} onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Población</Label>
-                      <Input value={cliente.poblacion || ""} onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })} />
-                    </div>
-                    <div className="space-y-2 col-span-2">
-                      <Label>Provincia</Label>
-                      <Input value={cliente.provincia || ""} onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })} />
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="fiscal" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Información Fiscal</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Selector Fiscal</Label>
-                      <Select value={cliente.selector_fiscal || ""} onValueChange={(value) => setCliente({ ...cliente, selector_fiscal: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="nada">Nada</SelectItem>
-                          <SelectItem value="ticketbai">TicketBAI</SelectItem>
-                          <SelectItem value="verifactu">VeriFactu</SelectItem>
-                        </SelectContent>
-                      </Select>
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Receipt className="h-4 w-4" />
+                      Información Fiscal
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Selector Fiscal</Label>
+                        <Select 
+                          value={cliente.selector_fiscal || ""} 
+                          onValueChange={(value) => setCliente({ ...cliente, selector_fiscal: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nada">Nada</SelectItem>
+                            <SelectItem value="ticketbai">TicketBAI</SelectItem>
+                            <SelectItem value="verifactu">VeriFactu</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>R. IVA</Label>
+                        <Input 
+                          value={cliente.r_iva || ""} 
+                          onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })} 
+                          placeholder="R. IVA"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Epígrafe</Label>
+                        <Input 
+                          value={cliente.epigrafe || ""} 
+                          onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })} 
+                          placeholder="Epígrafe"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>R. IVA</Label>
-                      <Input value={cliente.r_iva || ""} onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Epígrafe</Label>
-                      <Input value={cliente.epigrafe || ""} onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })} />
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="asesoria" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Información de la Asesoría</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2 col-span-2">
-                      <Label>Nombre de la Asesoría</Label>
-                      <Input value={cliente.nombre_asesoria || ""} onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })} />
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Información de la Asesoría
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Nombre de la Asesoría</Label>
+                        <Input 
+                          value={cliente.nombre_asesoria || ""} 
+                          onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })} 
+                          placeholder="Nombre de la asesoría"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <Phone className="h-3 w-3" />
+                          Teléfono Asesoría
+                        </Label>
+                        <Input 
+                          value={cliente.telefono_asesoria || ""} 
+                          onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })} 
+                          placeholder="+34 123 456 789"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Persona de Contacto</Label>
+                        <Input 
+                          value={cliente.persona_contacto_asesoria || ""} 
+                          onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })} 
+                          placeholder="Nombre del contacto"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Teléfono Asesoría</Label>
-                      <Input value={cliente.telefono_asesoria || ""} onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Persona de Contacto</Label>
-                      <Input value={cliente.persona_contacto_asesoria || ""} onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })} />
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="equipos" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Equipos del Cliente</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Los equipos se pueden gestionar desde la sección de equipos en la vista de solo lectura.
-                  </p>
-                  <div className="p-6 border-2 border-dashed rounded-lg text-center">
-                    <p className="text-muted-foreground">Sal del modo edición para gestionar equipos</p>
-                  </div>
-                </div>
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Wrench className="h-4 w-4" />
+                      Equipos del Cliente
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Los equipos se pueden gestionar desde la sección de equipos en la vista de solo lectura.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Sal del modo edición para gestionar equipos
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="archivos" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Archivos PDF</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Los archivos PDF se pueden gestionar desde la sección de documentos en la vista de solo lectura.
-                  </p>
-                  <div className="p-6 border-2 border-dashed rounded-lg text-center">
-                    <p className="text-muted-foreground">Sal del modo edición para gestionar documentos</p>
-                  </div>
-                </div>
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileType className="h-4 w-4" />
+                      Archivos PDF
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center py-8">
+                      <FileType className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Los archivos PDF se pueden gestionar desde la sección de documentos en la vista de solo lectura.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Sal del modo edición para gestionar documentos
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="notas" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Notas e Información</h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label>Información Destacada</Label>
-                      <Textarea value={cliente.informacion_destacada || ""} onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })} rows={2} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Notas Especiales</Label>
-                      <Textarea value={cliente.notas_especiales || ""} onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })} rows={2} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Notas Adicionales</Label>
-                      <Textarea value={cliente.notas_adicionales || ""} onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })} rows={2} />
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 gap-6">
+                  {/* Información Destacada Card */}
+                  <Card className="border-2 border-primary/30 bg-primary/5">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-primary" />
+                        Información Destacada
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Textarea 
+                        value={cliente.informacion_destacada || ""} 
+                        onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })} 
+                        rows={3}
+                        placeholder="Información importante o destacada del cliente..."
+                        className="bg-background"
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Notas Especiales Card */}
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <StickyNote className="h-4 w-4" />
+                        Notas Especiales
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Textarea 
+                        value={cliente.notas_especiales || ""} 
+                        onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })} 
+                        rows={3}
+                        placeholder="Notas especiales sobre el cliente..."
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Notas Adicionales Card */}
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Notas Adicionales
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Textarea 
+                        value={cliente.notas_adicionales || ""} 
+                        onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })} 
+                        rows={3}
+                        placeholder="Otras notas sobre el cliente..."
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Notas Generales Card */}
+                  <Card className="border-2">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <ScrollText className="h-4 w-4" />
+                        Notas Generales
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Textarea 
+                        value={cliente.notas || ""} 
+                        onChange={(e) => setCliente({ ...cliente, notas: e.target.value })} 
+                        rows={4}
+                        placeholder="Notas generales del cliente..."
+                      />
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
 
               <TabsContent value="contrato" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Contrato de Mantenimiento</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
+                <Card className="border-2">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ScrollText className="h-4 w-4" />
+                      Contrato de Mantenimiento
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
                       <Checkbox
                         id="tiene_contrato_mantenimiento"
                         checked={cliente.tiene_contrato_mantenimiento}
                         onCheckedChange={(checked) => setCliente({ ...cliente, tiene_contrato_mantenimiento: checked as boolean })}
                       />
-                      <Label htmlFor="tiene_contrato_mantenimiento" className="cursor-pointer">
+                      <Label htmlFor="tiene_contrato_mantenimiento" className="cursor-pointer font-medium">
                         Tiene Contrato de Mantenimiento
                       </Label>
                     </div>
 
                     {cliente.tiene_contrato_mantenimiento && (
-                      <div className="grid grid-cols-3 gap-4 pl-6 border-l-2 border-primary">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 border-2 border-primary/20 rounded-lg bg-primary/5">
                         <div className="space-y-2">
                           <Label>Tipo de Contrato</Label>
-                          <Select value={cliente.tipo_contrato || ""} onValueChange={(value) => setCliente({ ...cliente, tipo_contrato: value })}>
-                            <SelectTrigger>
+                          <Select 
+                            value={cliente.tipo_contrato || ""} 
+                            onValueChange={(value) => setCliente({ ...cliente, tipo_contrato: value })}
+                          >
+                            <SelectTrigger className="bg-background">
                               <SelectValue placeholder="Seleccionar..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -867,25 +1131,33 @@ const DetalleCliente = () => {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label>Fecha de Alta</Label>
+                          <Label className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3" />
+                            Fecha de Alta
+                          </Label>
                           <Input
                             type="date"
                             value={cliente.fecha_alta_contrato || ""}
                             onChange={(e) => setCliente({ ...cliente, fecha_alta_contrato: e.target.value })}
+                            className="bg-background"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Fecha de Caducidad</Label>
+                          <Label className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3" />
+                            Fecha de Caducidad
+                          </Label>
                           <Input
                             type="date"
                             value={cliente.fecha_caducidad_contrato || ""}
                             onChange={(e) => setCliente({ ...cliente, fecha_caducidad_contrato: e.target.value })}
+                            className="bg-background"
                           />
                         </div>
                       </div>
                     )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </CardContent>
