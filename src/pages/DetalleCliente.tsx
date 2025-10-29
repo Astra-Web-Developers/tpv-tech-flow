@@ -411,10 +411,16 @@ const DetalleCliente = () => {
             </Button>
           </div>
         ) : (
-          <Button onClick={() => setEditMode(true)} variant="outline">
-            <Edit2 className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo Ticket
+            </Button>
+            <Button onClick={() => setEditMode(true)} variant="outline">
+              <Edit2 className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          </div>
         )}
       </div>
 

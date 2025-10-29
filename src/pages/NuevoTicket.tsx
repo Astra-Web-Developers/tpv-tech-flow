@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,8 @@ interface Tecnico {
 
 const NuevoTicket = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const clienteIdParam = searchParams.get('cliente');
   const [loading, setLoading] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
@@ -30,7 +32,7 @@ const NuevoTicket = () => {
     titulo: "",
     descripcion: "",
     prioridad: "media",
-    cliente_id: "",
+    cliente_id: clienteIdParam || "",
     tecnicos_asignados: [] as string[],
   });
 
@@ -38,6 +40,12 @@ const NuevoTicket = () => {
     loadClientes();
     loadTecnicos();
   }, []);
+
+  useEffect(() => {
+    if (clienteIdParam) {
+      setFormData(prev => ({ ...prev, cliente_id: clienteIdParam }));
+    }
+  }, [clienteIdParam]);
 
   const loadClientes = async () => {
     try {
