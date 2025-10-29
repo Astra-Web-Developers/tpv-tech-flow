@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2 } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2, Upload, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Cliente {
   id: string;
@@ -39,6 +41,11 @@ interface Cliente {
   epigrafe: string | null;
   activo: boolean;
   fecha_alta_cliente: string | null;
+  logo_url: string | null;
+  tiene_contrato_mantenimiento: boolean;
+  tipo_contrato: string | null;
+  fecha_alta_contrato: string | null;
+  fecha_caducidad_contrato: string | null;
 }
 
 interface Equipo {
@@ -80,6 +87,9 @@ const DetalleCliente = () => {
   const [ticketsAbiertos, setTicketsAbiertos] = useState<Ticket[]>([]);
   const [historialCompleto, setHistorialCompleto] = useState<Ticket[]>([]);
   const [contratos, setContratos] = useState<Contrato[]>([]);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [nuevoEquipo, setNuevoEquipo] = useState({
     tipo: "",
     marca: "",
@@ -219,28 +229,104 @@ const DetalleCliente = () => {
     toast.info("Función de envío por email próximamente");
   };
 
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor selecciona un archivo de imagen');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('El archivo no puede superar los 5MB');
+        return;
+      }
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearLogo = () => {
+    setLogoFile(null);
+    setLogoPreview('');
+    if (cliente) {
+      setCliente({ ...cliente, logo_url: '' });
+    }
+  };
+
+  const uploadLogoToSupabase = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('client-logos')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error('Error uploading logo:', uploadError);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('client-logos')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error in uploadLogoToSupabase:', error);
+      return null;
+    }
+  };
+
   const handleUpdate = async () => {
     if (!cliente) return;
+    setUploadingLogo(true);
 
     try {
+      let logoUrl = cliente.logo_url;
+
+      // Si hay un archivo de logo, subirlo primero
+      if (logoFile) {
+        const uploadedUrl = await uploadLogoToSupabase(logoFile);
+        if (uploadedUrl) {
+          logoUrl = uploadedUrl;
+        } else {
+          toast.error("Error al subir el logo, pero continuaremos sin él");
+        }
+      }
+
+      const updatedCliente = {
+        ...cliente,
+        logo_url: logoUrl,
+      };
+
       const { error } = await supabase
         .from("clientes")
-        .update(cliente)
+        .update(updatedCliente)
         .eq("id", id);
 
       if (error) throw error;
 
       // Registrar actualización en auditoría
       if (id) {
-        await logUpdate("clientes", id, {}, cliente);
+        await logUpdate("clientes", id, {}, updatedCliente);
       }
 
       toast.success("Cliente actualizado");
       setEditMode(false);
+      setLogoFile(null);
+      setLogoPreview('');
       loadCliente();
     } catch (error: any) {
       console.error("Error actualizando cliente:", error);
       toast.error(error.message || "Error al actualizar cliente");
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -293,15 +379,43 @@ const DetalleCliente = () => {
           <Button variant="outline" size="icon" onClick={() => navigate("/clientes")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
+          {cliente.logo_url && (
+            <div className="w-16 h-16 rounded-lg border-2 border-border overflow-hidden flex items-center justify-center bg-background">
+              <img 
+                src={cliente.logo_url} 
+                alt={`Logo ${cliente.nombre}`} 
+                className="w-full h-full object-contain p-1"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
           <div>
             <h1 className="text-3xl font-bold">{cliente.nombre}</h1>
             {cliente.cif && <p className="text-muted-foreground">CIF: {cliente.cif}</p>}
           </div>
         </div>
-        <Button onClick={() => setEditMode(!editMode)} variant={editMode ? "default" : "outline"}>
-          <Edit2 className="h-4 w-4 mr-2" />
-          {editMode ? "Guardar" : "Editar"}
-        </Button>
+        {editMode ? (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => {
+              setEditMode(false);
+              setLogoFile(null);
+              setLogoPreview('');
+              loadCliente();
+            }}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdate} disabled={uploadingLogo}>
+              {uploadingLogo ? "Guardando..." : "Guardar Cambios"}
+            </Button>
+          </div>
+        ) : (
+          <Button onClick={() => setEditMode(true)} variant="outline">
+            <Edit2 className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+        )}
       </div>
 
       {/* Alertas Visuales */}
@@ -448,36 +562,128 @@ const DetalleCliente = () => {
         <Card>
           <CardContent className="pt-6">
             <Tabs defaultValue="empresa" className="w-full">
-              <TabsList className="grid w-full grid-cols-6 text-xs">
+              <TabsList className="grid w-full grid-cols-9 text-xs">
                 <TabsTrigger value="empresa">Empresa</TabsTrigger>
                 <TabsTrigger value="contactos">Contactos</TabsTrigger>
                 <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
                 <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
                 <TabsTrigger value="asesoria">Asesoría</TabsTrigger>
+                <TabsTrigger value="equipos">Equipos</TabsTrigger>
+                <TabsTrigger value="archivos">Archivos</TabsTrigger>
                 <TabsTrigger value="notas">Notas</TabsTrigger>
+                <TabsTrigger value="contrato">Contrato</TabsTrigger>
               </TabsList>
 
               <TabsContent value="empresa" className="space-y-4 mt-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label>Nombre de la Empresa *</Label>
-                    <Input value={cliente.nombre} onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nombre Fiscal</Label>
-                    <Input value={cliente.nombre_fiscal || ""} onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CIF/NIF</Label>
-                    <Input value={cliente.cif || ""} onChange={(e) => setCliente({ ...cliente, cif: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Selector Fiscal</Label>
-                    <Input value={cliente.selector_fiscal || ""} onChange={(e) => setCliente({ ...cliente, selector_fiscal: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Información Destacada</Label>
-                    <Input value={cliente.informacion_destacada || ""} onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })} />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Datos de la Empresa</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-2">
+                      <Label>Logo de la Empresa</Label>
+                      <Tabs defaultValue="upload" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="upload">Subir Archivo</TabsTrigger>
+                          <TabsTrigger value="url">URL</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="upload" className="space-y-3">
+                          <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
+                            {logoPreview || cliente.logo_url ? (
+                              <div className="relative w-full">
+                                <img
+                                  src={logoPreview || cliente.logo_url || ""}
+                                  alt="Vista previa"
+                                  className="max-h-32 mx-auto object-contain rounded"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-0 right-0"
+                                  onClick={clearLogo}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                                {logoFile && (
+                                  <p className="text-xs text-center text-muted-foreground mt-2">
+                                    {logoFile.name}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
+                                <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                                <p className="text-sm font-medium">Click para seleccionar imagen</p>
+                                <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG hasta 5MB</p>
+                              </label>
+                            )}
+                            <Input
+                              id="logo-upload"
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleLogoFileChange}
+                            />
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="url" className="space-y-3">
+                          <Input
+                            type="url"
+                            placeholder="https://ejemplo.com/logo.png"
+                            value={cliente.logo_url || ""}
+                            onChange={(e) => setCliente({ ...cliente, logo_url: e.target.value })}
+                          />
+                          {cliente.logo_url && (
+                            <div className="relative">
+                              <img
+                                src={cliente.logo_url}
+                                alt="Logo preview"
+                                className="max-h-32 mx-auto object-contain rounded"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+
+                    <div className="space-y-2 col-span-2">
+                      <Label>Nombre de la Empresa *</Label>
+                      <Input value={cliente.nombre} onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nombre Fiscal</Label>
+                      <Input value={cliente.nombre_fiscal || ""} onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>CIF/NIF</Label>
+                      <Input value={cliente.cif || ""} onChange={(e) => setCliente({ ...cliente, cif: e.target.value })} />
+                    </div>
+
+                    <div className="space-y-2 col-span-2">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="activo"
+                            checked={cliente.activo}
+                            onCheckedChange={(checked) => setCliente({ ...cliente, activo: checked as boolean })}
+                          />
+                          <Label htmlFor="activo" className="cursor-pointer">Cliente Activo</Label>
+                        </div>
+                        <div className="space-y-2 col-span-2">
+                          <Label htmlFor="fecha_alta_cliente">Fecha de Alta del Cliente</Label>
+                          <Input
+                            id="fecha_alta_cliente"
+                            type="date"
+                            value={cliente.fecha_alta_cliente || ""}
+                            onChange={(e) => setCliente({ ...cliente, fecha_alta_cliente: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </TabsContent>
@@ -507,77 +713,175 @@ const DetalleCliente = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="ubicacion" className="space-y-4 mt-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label>Dirección</Label>
-                    <Input value={cliente.direccion || ""} onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Código Postal</Label>
-                    <Input value={cliente.codigo_postal || ""} onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Población</Label>
-                    <Input value={cliente.poblacion || ""} onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })} />
-                  </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label>Provincia</Label>
-                    <Input value={cliente.provincia || ""} onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })} />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="fiscal" className="space-y-4 mt-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>R. IVA</Label>
-                    <Input value={cliente.r_iva || ""} onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Epígrafe</Label>
-                    <Input value={cliente.epigrafe || ""} onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })} />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="asesoria" className="space-y-4 mt-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <Label>Nombre de la Asesoría</Label>
-                    <Input value={cliente.nombre_asesoria || ""} onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Teléfono de la Asesoría</Label>
-                    <Input value={cliente.telefono_asesoria || ""} onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Persona de Contacto de la Asesoría</Label>
-                    <Input value={cliente.persona_contacto_asesoria || ""} onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })} />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="notas" className="space-y-4 mt-6">
+              <TabsContent value="ubicacion" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Notas Especiales</Label>
-                    <Textarea value={cliente.notas_especiales || ""} onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })} rows={4} />
+                  <h3 className="text-lg font-semibold">Dirección</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-2">
+                      <Label>Dirección</Label>
+                      <Input value={cliente.direccion || ""} onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Código Postal</Label>
+                      <Input value={cliente.codigo_postal || ""} onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Población</Label>
+                      <Input value={cliente.poblacion || ""} onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })} />
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label>Provincia</Label>
+                      <Input value={cliente.provincia || ""} onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })} />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Notas Adicionales</Label>
-                    <Textarea value={cliente.notas_adicionales || ""} onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })} rows={4} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="fiscal" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Información Fiscal</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Selector Fiscal</Label>
+                      <Select value={cliente.selector_fiscal || ""} onValueChange={(value) => setCliente({ ...cliente, selector_fiscal: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="nada">Nada</SelectItem>
+                          <SelectItem value="ticketbai">TicketBAI</SelectItem>
+                          <SelectItem value="verifactu">VeriFactu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>R. IVA</Label>
+                      <Input value={cliente.r_iva || ""} onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Epígrafe</Label>
+                      <Input value={cliente.epigrafe || ""} onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })} />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Notas / Razón Social</Label>
-                    <Textarea value={cliente.notas || ""} onChange={(e) => setCliente({ ...cliente, notas: e.target.value })} rows={4} />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="asesoria" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Información de la Asesoría</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-2">
+                      <Label>Nombre de la Asesoría</Label>
+                      <Input value={cliente.nombre_asesoria || ""} onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Teléfono Asesoría</Label>
+                      <Input value={cliente.telefono_asesoria || ""} onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Persona de Contacto</Label>
+                      <Input value={cliente.persona_contacto_asesoria || ""} onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })} />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="equipos" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Equipos del Cliente</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Los equipos se pueden gestionar desde la sección de equipos en la vista de solo lectura.
+                  </p>
+                  <div className="p-6 border-2 border-dashed rounded-lg text-center">
+                    <p className="text-muted-foreground">Sal del modo edición para gestionar equipos</p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="archivos" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Archivos PDF</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Los archivos PDF se pueden gestionar desde la sección de documentos en la vista de solo lectura.
+                  </p>
+                  <div className="p-6 border-2 border-dashed rounded-lg text-center">
+                    <p className="text-muted-foreground">Sal del modo edición para gestionar documentos</p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="notas" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Notas e Información</h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label>Información Destacada</Label>
+                      <Textarea value={cliente.informacion_destacada || ""} onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })} rows={2} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Notas Especiales</Label>
+                      <Textarea value={cliente.notas_especiales || ""} onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })} rows={2} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Notas Adicionales</Label>
+                      <Textarea value={cliente.notas_adicionales || ""} onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })} rows={2} />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="contrato" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Contrato de Mantenimiento</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="tiene_contrato_mantenimiento"
+                        checked={cliente.tiene_contrato_mantenimiento}
+                        onCheckedChange={(checked) => setCliente({ ...cliente, tiene_contrato_mantenimiento: checked as boolean })}
+                      />
+                      <Label htmlFor="tiene_contrato_mantenimiento" className="cursor-pointer">
+                        Tiene Contrato de Mantenimiento
+                      </Label>
+                    </div>
+
+                    {cliente.tiene_contrato_mantenimiento && (
+                      <div className="grid grid-cols-3 gap-4 pl-6 border-l-2 border-primary">
+                        <div className="space-y-2">
+                          <Label>Tipo de Contrato</Label>
+                          <Select value={cliente.tipo_contrato || ""} onValueChange={(value) => setCliente({ ...cliente, tipo_contrato: value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="trimestral">Trimestral</SelectItem>
+                              <SelectItem value="semestral">Semestral</SelectItem>
+                              <SelectItem value="anual">Anual</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Fecha de Alta</Label>
+                          <Input
+                            type="date"
+                            value={cliente.fecha_alta_contrato || ""}
+                            onChange={(e) => setCliente({ ...cliente, fecha_alta_contrato: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Fecha de Caducidad</Label>
+                          <Input
+                            type="date"
+                            value={cliente.fecha_caducidad_contrato || ""}
+                            onChange={(e) => setCliente({ ...cliente, fecha_caducidad_contrato: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
             </Tabs>
-            <div className="mt-6">
-              <Button onClick={handleUpdate} className="w-full">Guardar Cambios</Button>
-            </div>
           </CardContent>
         </Card>
       ) : (
