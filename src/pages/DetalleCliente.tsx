@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Plus, Edit2, Wrench, AlertTriangle, FileX, FileDown, Send, History, CheckCircle2, FileText, Calendar, Building2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
 
@@ -23,6 +24,21 @@ interface Cliente {
   provincia: string | null;
   codigo_postal: string | null;
   notas: string | null;
+  nombre_fiscal: string | null;
+  persona_contacto: string | null;
+  nombre_encargado: string | null;
+  telefono_encargado: string | null;
+  selector_fiscal: string | null;
+  informacion_destacada: string | null;
+  notas_especiales: string | null;
+  notas_adicionales: string | null;
+  nombre_asesoria: string | null;
+  telefono_asesoria: string | null;
+  persona_contacto_asesoria: string | null;
+  r_iva: string | null;
+  epigrafe: string | null;
+  activo: boolean;
+  fecha_alta_cliente: string | null;
 }
 
 interface Equipo {
@@ -207,32 +223,21 @@ const DetalleCliente = () => {
     if (!cliente) return;
 
     try {
-      const updateData = {
-        nombre: cliente.nombre,
-        cif: cliente.cif,
-        telefono: cliente.telefono,
-        email: cliente.email,
-        direccion: cliente.direccion,
-        poblacion: cliente.poblacion,
-        provincia: cliente.provincia,
-        codigo_postal: cliente.codigo_postal,
-        notas: cliente.notas,
-      };
-
       const { error } = await supabase
         .from("clientes")
-        .update(updateData)
+        .update(cliente)
         .eq("id", id);
 
       if (error) throw error;
 
       // Registrar actualización en auditoría
       if (id) {
-        await logUpdate("clientes", id, {}, updateData);
+        await logUpdate("clientes", id, {}, cliente);
       }
 
       toast.success("Cliente actualizado");
       setEditMode(false);
+      loadCliente();
     } catch (error: any) {
       console.error("Error actualizando cliente:", error);
       toast.error(error.message || "Error al actualizar cliente");
@@ -439,101 +444,218 @@ const DetalleCliente = () => {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      {editMode ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Información de Contacto</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {editMode ? (
-              <>
-                <div className="space-y-2">
-                  <Label>Nombre</Label>
-                  <Input
-                    value={cliente.nombre}
-                    onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>CIF</Label>
-                  <Input
-                    value={cliente.cif || ""}
-                    onChange={(e) => setCliente({ ...cliente, cif: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Teléfono</Label>
-                  <Input
-                    value={cliente.telefono || ""}
-                    onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input
-                    type="email"
-                    value={cliente.email || ""}
-                    onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
-                  />
-                </div>
-                <Button onClick={handleUpdate} className="w-full">Guardar Cambios</Button>
-              </>
-            ) : (
-              <>
-                {cliente.telefono && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-5 w-5 text-muted-foreground" />
-                    <a href={`tel:${cliente.telefono}`} className="hover:text-primary">
-                      {cliente.telefono}
-                    </a>
-                  </div>
-                )}
-                {cliente.email && (
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-muted-foreground" />
-                    <a href={`mailto:${cliente.email}`} className="hover:text-primary">
-                      {cliente.email}
-                    </a>
-                  </div>
-                )}
-                {cliente.direccion && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p>{cliente.direccion}</p>
-                      {(cliente.codigo_postal || cliente.poblacion || cliente.provincia) && (
-                        <p className="text-sm text-muted-foreground">
-                          {cliente.codigo_postal} {cliente.poblacion} {cliente.provincia}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+          <CardContent className="pt-6">
+            <Tabs defaultValue="empresa" className="w-full">
+              <TabsList className="grid w-full grid-cols-6 text-xs">
+                <TabsTrigger value="empresa">Empresa</TabsTrigger>
+                <TabsTrigger value="contactos">Contactos</TabsTrigger>
+                <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
+                <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
+                <TabsTrigger value="asesoria">Asesoría</TabsTrigger>
+                <TabsTrigger value="notas">Notas</TabsTrigger>
+              </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Notas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {editMode ? (
-              <Textarea
-                value={cliente.notas || ""}
-                onChange={(e) => setCliente({ ...cliente, notas: e.target.value })}
-                rows={8}
-                placeholder="Notas sobre el cliente..."
-              />
-            ) : (
-              <p className="text-muted-foreground whitespace-pre-wrap">
-                {cliente.notas || "Sin notas"}
-              </p>
-            )}
+              <TabsContent value="empresa" className="space-y-4 mt-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label>Nombre de la Empresa *</Label>
+                    <Input value={cliente.nombre} onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nombre Fiscal</Label>
+                    <Input value={cliente.nombre_fiscal || ""} onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>CIF/NIF</Label>
+                    <Input value={cliente.cif || ""} onChange={(e) => setCliente({ ...cliente, cif: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Selector Fiscal</Label>
+                    <Input value={cliente.selector_fiscal || ""} onChange={(e) => setCliente({ ...cliente, selector_fiscal: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Información Destacada</Label>
+                    <Input value={cliente.informacion_destacada || ""} onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })} />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="contactos" className="space-y-4 mt-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label>Persona de Contacto</Label>
+                    <Input value={cliente.persona_contacto || ""} onChange={(e) => setCliente({ ...cliente, persona_contacto: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Teléfono</Label>
+                    <Input value={cliente.telefono || ""} onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input type="email" value={cliente.email || ""} onChange={(e) => setCliente({ ...cliente, email: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nombre del Encargado</Label>
+                    <Input value={cliente.nombre_encargado || ""} onChange={(e) => setCliente({ ...cliente, nombre_encargado: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Teléfono del Encargado</Label>
+                    <Input value={cliente.telefono_encargado || ""} onChange={(e) => setCliente({ ...cliente, telefono_encargado: e.target.value })} />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="ubicacion" className="space-y-4 mt-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label>Dirección</Label>
+                    <Input value={cliente.direccion || ""} onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Código Postal</Label>
+                    <Input value={cliente.codigo_postal || ""} onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Población</Label>
+                    <Input value={cliente.poblacion || ""} onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })} />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label>Provincia</Label>
+                    <Input value={cliente.provincia || ""} onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })} />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="fiscal" className="space-y-4 mt-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>R. IVA</Label>
+                    <Input value={cliente.r_iva || ""} onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Epígrafe</Label>
+                    <Input value={cliente.epigrafe || ""} onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })} />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="asesoria" className="space-y-4 mt-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label>Nombre de la Asesoría</Label>
+                    <Input value={cliente.nombre_asesoria || ""} onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Teléfono de la Asesoría</Label>
+                    <Input value={cliente.telefono_asesoria || ""} onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Persona de Contacto de la Asesoría</Label>
+                    <Input value={cliente.persona_contacto_asesoria || ""} onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })} />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="notas" className="space-y-4 mt-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Notas Especiales</Label>
+                    <Textarea value={cliente.notas_especiales || ""} onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })} rows={4} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notas Adicionales</Label>
+                    <Textarea value={cliente.notas_adicionales || ""} onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })} rows={4} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notas / Razón Social</Label>
+                    <Textarea value={cliente.notas || ""} onChange={(e) => setCliente({ ...cliente, notas: e.target.value })} rows={4} />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+            <div className="mt-6">
+              <Button onClick={handleUpdate} className="w-full">Guardar Cambios</Button>
+            </div>
           </CardContent>
         </Card>
-      </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Información de Contacto</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {cliente.notas && (
+                <div className="flex items-start gap-3 pb-3 border-b">
+                  <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground">Razón Social</p>
+                    <p className="font-medium">{cliente.notas}</p>
+                  </div>
+                </div>
+              )}
+              {cliente.telefono && (
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
+                  <a href={`tel:${cliente.telefono}`} className="hover:text-primary">
+                    {cliente.telefono}
+                  </a>
+                </div>
+              )}
+              {cliente.email && (
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-muted-foreground" />
+                  <a href={`mailto:${cliente.email}`} className="hover:text-primary">
+                    {cliente.email}
+                  </a>
+                </div>
+              )}
+              {(cliente.direccion || cliente.poblacion || cliente.provincia) && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Dirección</p>
+                    {cliente.direccion && <p>{cliente.direccion}</p>}
+                    {(cliente.poblacion || cliente.provincia) && (
+                      <p className="text-sm text-muted-foreground">
+                        {[cliente.poblacion, cliente.provincia].filter(Boolean).join(", ")}
+                        {cliente.codigo_postal && ` (${cliente.codigo_postal})`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {cliente.notas_especiales && (
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Notas Especiales</p>
+                    <p className="text-sm whitespace-pre-wrap">{cliente.notas_especiales}</p>
+                  </div>
+                )}
+                {cliente.notas_adicionales && (
+                  <div>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Notas Adicionales</p>
+                    <p className="text-sm whitespace-pre-wrap">{cliente.notas_adicionales}</p>
+                  </div>
+                )}
+                {!cliente.notas_especiales && !cliente.notas_adicionales && (
+                  <p className="text-muted-foreground">Sin notas</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
