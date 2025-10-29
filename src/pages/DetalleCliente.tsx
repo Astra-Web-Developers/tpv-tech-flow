@@ -140,6 +140,22 @@ const DetalleCliente = () => {
     }
   }, [id]);
 
+  // Sincronizar datos del contrato cuando hay contratos disponibles
+  useEffect(() => {
+    if (contratos.length > 0 && editMode) {
+      const contratoActivo = contratos.find(c => c.activo) || contratos[0];
+      if (contratoActivo && cliente) {
+        setCliente({
+          ...cliente,
+          tiene_contrato_mantenimiento: true,
+          tipo_contrato: contratoActivo.tipo,
+          fecha_alta_contrato: contratoActivo.fecha_alta,
+          fecha_caducidad_contrato: contratoActivo.fecha_caducidad,
+        });
+      }
+    }
+  }, [contratos, editMode]);
+
   const loadCliente = async () => {
     try {
       const { data, error } = await supabase.from("clientes").select("*").eq("id", id).single();
