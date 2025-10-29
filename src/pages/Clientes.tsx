@@ -59,6 +59,7 @@ interface Cliente {
   persona_contacto_asesoria: string | null;
   r_iva: string | null;
   epigrafe: string | null;
+  motivo_inactivacion: string | null;
 }
 
 const Clientes = () => {
@@ -290,8 +291,16 @@ const Clientes = () => {
 
   const filteredClientes = clientes.filter((cliente) => {
     // Filtro por estado activo/inactivo
-    if (!mostrarInactivos && !cliente.activo) {
-      return false;
+    if (mostrarInactivos) {
+      // Solo mostrar inactivos
+      if (cliente.activo) {
+        return false;
+      }
+    } else {
+      // Solo mostrar activos
+      if (!cliente.activo) {
+        return false;
+      }
     }
 
     // Filtro por búsqueda de texto
@@ -946,6 +955,12 @@ const Clientes = () => {
                       <CardDescription className="flex items-center gap-1">
                         <span className="font-medium">CIF:</span> {cliente.cif}
                       </CardDescription>
+                    )}
+                    {!cliente.activo && cliente.motivo_inactivacion && (
+                      <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs">
+                        <span className="font-semibold text-destructive">Motivo: </span>
+                        <span className="text-muted-foreground">{cliente.motivo_inactivacion}</span>
+                      </div>
                     )}
                   </div>
                 </div>

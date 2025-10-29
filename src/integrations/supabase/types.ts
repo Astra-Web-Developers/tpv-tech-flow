@@ -116,6 +116,7 @@ export type Database = {
           id: string
           informacion_destacada: string | null
           logo_url: string | null
+          motivo_inactivacion: string | null
           nombre: string
           nombre_asesoria: string | null
           nombre_encargado: string | null
@@ -151,6 +152,7 @@ export type Database = {
           id?: string
           informacion_destacada?: string | null
           logo_url?: string | null
+          motivo_inactivacion?: string | null
           nombre: string
           nombre_asesoria?: string | null
           nombre_encargado?: string | null
@@ -186,6 +188,7 @@ export type Database = {
           id?: string
           informacion_destacada?: string | null
           logo_url?: string | null
+          motivo_inactivacion?: string | null
           nombre?: string
           nombre_asesoria?: string | null
           nombre_encargado?: string | null

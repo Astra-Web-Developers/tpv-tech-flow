@@ -82,6 +82,7 @@ interface Cliente {
   tipo_contrato: string | null;
   fecha_alta_contrato: string | null;
   fecha_caducidad_contrato: string | null;
+  motivo_inactivacion: string | null;
 }
 
 interface Equipo {
@@ -143,6 +144,8 @@ const DetalleCliente = () => {
     pendrive_c_seg: "",
   });
   const [equipoConfigs, setEquipoConfigs] = useState<Record<string, string[]>>({});
+  const [dialogInactivacionOpen, setDialogInactivacionOpen] = useState(false);
+  const [motivoInactivacion, setMotivoInactivacion] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -440,27 +443,57 @@ const DetalleCliente = () => {
   };
 
   const handleDelete = async () => {
-    const mensaje = cliente.activo 
-      ? "¿Deseas archivar este cliente? El cliente quedará inactivo pero podrás reactivarlo después."
-      : "¿Deseas reactivar este cliente?";
-    
-    if (!confirm(mensaje)) {
+    // Si el cliente está activo, abrir el diálogo de inactivación
+    if (cliente.activo) {
+      setDialogInactivacionOpen(true);
+      return;
+    }
+
+    // Si está inactivo, reactivar directamente
+    if (!confirm("¿Deseas reactivar este cliente?")) {
       return;
     }
 
     try {
       const { error } = await supabase
         .from("clientes")
-        .update({ activo: !cliente.activo })
+        .update({ activo: true, motivo_inactivacion: null })
         .eq("id", id);
 
       if (error) throw error;
 
-      toast.success(cliente.activo ? "Cliente archivado correctamente" : "Cliente reactivado correctamente");
+      toast.success("Cliente reactivado correctamente");
       loadCliente();
     } catch (error: any) {
       console.error("Error actualizando estado del cliente:", error);
       toast.error(error.message || "Error al actualizar cliente");
+    }
+  };
+
+  const confirmarInactivacion = async () => {
+    if (!motivoInactivacion.trim()) {
+      toast.error("Debes proporcionar un motivo para archivar el cliente");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("clientes")
+        .update({ 
+          activo: false,
+          motivo_inactivacion: motivoInactivacion 
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Cliente archivado correctamente");
+      setDialogInactivacionOpen(false);
+      setMotivoInactivacion("");
+      loadCliente();
+    } catch (error: any) {
+      console.error("Error archivando cliente:", error);
+      toast.error(error.message || "Error al archivar cliente");
     }
   };
 
@@ -491,11 +524,17 @@ const DetalleCliente = () => {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold text-orange-900 dark:text-orange-100">Cliente Archivado</p>
                 <p className="text-sm text-orange-700 dark:text-orange-200">
                   Este cliente está inactivo. Puedes reactivarlo usando el botón en la parte superior.
                 </p>
+                {cliente.motivo_inactivacion && (
+                  <div className="mt-2 p-2 bg-orange-100 dark:bg-orange-900 rounded border border-orange-300 dark:border-orange-700">
+                    <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">Motivo de inactivación:</p>
+                    <p className="text-sm text-orange-800 dark:text-orange-200">{cliente.motivo_inactivacion}</p>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -570,6 +609,48 @@ const DetalleCliente = () => {
           </div>
         )}
       </div>
+
+      {/* Diálogo de Inactivación */}
+      <Dialog open={dialogInactivacionOpen} onOpenChange={setDialogInactivacionOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archivar Cliente</DialogTitle>
+            <DialogDescription>
+              Por favor, indica el motivo por el cual estás archivando este cliente. Esta información se mostrará junto con el cliente inactivo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Motivo de Inactivación</Label>
+              <Textarea
+                value={motivoInactivacion}
+                onChange={(e) => setMotivoInactivacion(e.target.value)}
+                placeholder="Ej: Cliente solicitó baja del servicio, incumplimiento de pagos, cierre del negocio, etc."
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => {
+                  setDialogInactivacionOpen(false);
+                  setMotivoInactivacion("");
+                }} 
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={confirmarInactivacion}
+                variant="destructive"
+                className="flex-1"
+              >
+                Archivar Cliente
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Alertas Visuales */}
       <div className="flex gap-3">
