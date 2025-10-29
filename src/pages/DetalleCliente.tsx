@@ -440,20 +440,27 @@ const DetalleCliente = () => {
   };
 
   const handleDelete = async () => {
-    if (!confirm("¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer.")) {
+    const mensaje = cliente.activo 
+      ? "¿Deseas archivar este cliente? El cliente quedará inactivo pero podrás reactivarlo después."
+      : "¿Deseas reactivar este cliente?";
+    
+    if (!confirm(mensaje)) {
       return;
     }
 
     try {
-      const { error } = await supabase.from("clientes").delete().eq("id", id);
+      const { error } = await supabase
+        .from("clientes")
+        .update({ activo: !cliente.activo })
+        .eq("id", id);
 
       if (error) throw error;
 
-      toast.success("Cliente eliminado correctamente");
-      navigate("/clientes");
+      toast.success(cliente.activo ? "Cliente archivado correctamente" : "Cliente reactivado correctamente");
+      loadCliente();
     } catch (error: any) {
-      console.error("Error eliminando cliente:", error);
-      toast.error(error.message || "Error al eliminar cliente");
+      console.error("Error actualizando estado del cliente:", error);
+      toast.error(error.message || "Error al actualizar cliente");
     }
   };
 
@@ -479,6 +486,22 @@ const DetalleCliente = () => {
 
   return (
     <div className="space-y-6">
+      {!cliente.activo && (
+        <Card className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-950">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-orange-600" />
+              <div>
+                <p className="font-semibold text-orange-900 dark:text-orange-100">Cliente Archivado</p>
+                <p className="text-sm text-orange-700 dark:text-orange-200">
+                  Este cliente está inactivo. Puedes reactivarlo usando el botón en la parte superior.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => navigate("/clientes")}>
@@ -535,10 +558,14 @@ const DetalleCliente = () => {
             <Button
               onClick={handleDelete}
               variant="outline"
-              className="border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-md"
+              className={cliente.activo 
+                ? "border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-md"
+                : "border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white shadow-md"
+              }
               size="icon"
+              title={cliente.activo ? "Archivar cliente" : "Reactivar cliente"}
             >
-              <Trash2 className="h-5 w-5" />
+              {cliente.activo ? <Trash2 className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
             </Button>
           </div>
         )}

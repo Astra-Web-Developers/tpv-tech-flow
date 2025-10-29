@@ -68,6 +68,7 @@ const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState<Etiqueta[]>([]);
   const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([]);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
@@ -113,7 +114,6 @@ const Clientes = () => {
       const { data, error } = await supabase
         .from("clientes")
         .select("*")
-        .eq("activo", true)
         .order("nombre");
 
       if (error) throw error;
@@ -289,6 +289,11 @@ const Clientes = () => {
   };
 
   const filteredClientes = clientes.filter((cliente) => {
+    // Filtro por estado activo/inactivo
+    if (!mostrarInactivos && !cliente.activo) {
+      return false;
+    }
+
     // Filtro por búsqueda de texto
     const matchesSearch =
       cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -822,14 +827,26 @@ const Clientes = () => {
       )}
 
       <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nombre, CIF o teléfono..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nombre, CIF o teléfono..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center gap-2 px-4 border rounded-md bg-card">
+            <Checkbox
+              id="mostrar-inactivos"
+              checked={mostrarInactivos}
+              onCheckedChange={(checked) => setMostrarInactivos(checked as boolean)}
+            />
+            <Label htmlFor="mostrar-inactivos" className="cursor-pointer whitespace-nowrap">
+              Mostrar inactivos
+            </Label>
+          </div>
         </div>
 
         {etiquetasDisponibles.length > 0 && (
@@ -892,7 +909,9 @@ const Clientes = () => {
           filteredClientes.map((cliente) => (
             <Card
               key={cliente.id}
-              className="cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 overflow-hidden group"
+              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 overflow-hidden group ${
+                !cliente.activo ? "opacity-60 border-muted" : ""
+              }`}
               onClick={() => navigate(`/clientes/${cliente.id}`)}
             >
               {/* Logo Header */}
@@ -912,7 +931,14 @@ const Clientes = () => {
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 space-y-1">
-                    <CardTitle className="text-xl group-hover:text-primary transition-colors">{cliente.nombre}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-xl group-hover:text-primary transition-colors">{cliente.nombre}</CardTitle>
+                      {!cliente.activo && (
+                        <Badge variant="secondary" className="text-xs">
+                          Archivado
+                        </Badge>
+                      )}
+                    </div>
                     {cliente.nombre_fiscal && (
                       <CardDescription className="font-semibold text-base">{cliente.nombre_fiscal}</CardDescription>
                     )}
