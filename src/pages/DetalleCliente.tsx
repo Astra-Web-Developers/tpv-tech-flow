@@ -885,172 +885,368 @@ const DetalleCliente = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Información de Contacto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {cliente.notas && (
-                <div className="flex items-start gap-3 pb-3 border-b">
-                  <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground">Razón Social</p>
-                    <p className="font-medium">{cliente.notas}</p>
-                  </div>
-                </div>
-              )}
-              {cliente.telefono && (
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-muted-foreground" />
-                  <a href={`tel:${cliente.telefono}`} className="hover:text-primary">
-                    {cliente.telefono}
-                  </a>
-                </div>
-              )}
-              {cliente.email && (
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
-                  <a href={`mailto:${cliente.email}`} className="hover:text-primary">
-                    {cliente.email}
-                  </a>
-                </div>
-              )}
-              {(cliente.direccion || cliente.poblacion || cliente.provincia) && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-1">Dirección</p>
-                    {cliente.direccion && <p>{cliente.direccion}</p>}
-                    {(cliente.poblacion || cliente.provincia) && (
-                      <p className="text-sm text-muted-foreground">
-                        {[cliente.poblacion, cliente.provincia].filter(Boolean).join(", ")}
-                        {cliente.codigo_postal && ` (${cliente.codigo_postal})`}
-                      </p>
+        <Card>
+          <CardContent className="pt-6">
+            <Tabs defaultValue="empresa" className="w-full">
+              <TabsList className="grid w-full grid-cols-9 text-xs">
+                <TabsTrigger value="empresa">Empresa</TabsTrigger>
+                <TabsTrigger value="contactos">Contactos</TabsTrigger>
+                <TabsTrigger value="ubicacion">Ubicación</TabsTrigger>
+                <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
+                <TabsTrigger value="asesoria">Asesoría</TabsTrigger>
+                <TabsTrigger value="equipos">Equipos</TabsTrigger>
+                <TabsTrigger value="archivos">Archivos</TabsTrigger>
+                <TabsTrigger value="notas">Notas</TabsTrigger>
+                <TabsTrigger value="contrato">Contrato</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="empresa" className="space-y-4 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Datos de la Empresa</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {cliente.logo_url && (
+                      <div className="col-span-2 flex justify-center">
+                        <img 
+                          src={cliente.logo_url} 
+                          alt={`Logo ${cliente.nombre}`}
+                          className="max-h-32 object-contain rounded border p-2"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground">Nombre de la Empresa</Label>
+                      <p className="font-medium">{cliente.nombre}</p>
+                    </div>
+                    {cliente.nombre_fiscal && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Nombre Fiscal</Label>
+                        <p className="font-medium">{cliente.nombre_fiscal}</p>
+                      </div>
+                    )}
+                    {cliente.cif && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">CIF/NIF</Label>
+                        <p className="font-medium">{cliente.cif}</p>
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <Label className="text-muted-foreground">Estado</Label>
+                      <Badge variant={cliente.activo ? "default" : "secondary"}>
+                        {cliente.activo ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </div>
+                    {cliente.fecha_alta_cliente && (
+                      <div className="space-y-1 col-span-2">
+                        <Label className="text-muted-foreground">Fecha de Alta del Cliente</Label>
+                        <p className="font-medium">{new Date(cliente.fecha_alta_cliente).toLocaleDateString()}</p>
+                      </div>
                     )}
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Notas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {cliente.notas_especiales && (
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-1">Notas Especiales</p>
-                    <p className="text-sm whitespace-pre-wrap">{cliente.notas_especiales}</p>
-                  </div>
-                )}
-                {cliente.notas_adicionales && (
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-1">Notas Adicionales</p>
-                    <p className="text-sm whitespace-pre-wrap">{cliente.notas_adicionales}</p>
-                  </div>
-                )}
-                {!cliente.notas_especiales && !cliente.notas_adicionales && (
-                  <p className="text-muted-foreground">Sin notas</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Equipos</CardTitle>
-            <Dialog open={dialogEquipoOpen} onOpenChange={setDialogEquipoOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Equipo
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Agregar Equipo</DialogTitle>
-                  <DialogDescription>Registra un nuevo equipo del cliente</DialogDescription>
-                </DialogHeader>
+              <TabsContent value="contactos" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Tipo de Equipo</Label>
-                    <Input
-                      value={nuevoEquipo.tipo}
-                      onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, tipo: e.target.value })}
-                      placeholder="Ej: TPV, Cash Guard, Balanza"
-                    />
-                  </div>
+                  <h3 className="text-lg font-semibold">Personas de Contacto</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Marca</Label>
-                      <Input
-                        value={nuevoEquipo.marca}
-                        onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, marca: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Modelo</Label>
-                      <Input
-                        value={nuevoEquipo.modelo}
-                        onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, modelo: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Número de Serie</Label>
-                    <Input
-                      value={nuevoEquipo.numero_serie}
-                      onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie: e.target.value })}
-                    />
-                  </div>
-                  <Button onClick={agregarEquipo} className="w-full">Agregar Equipo</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {equipos.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No hay equipos registrados</p>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2">
-              {equipos.map((equipo) => (
-                <div key={equipo.id} className="p-4 border rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Wrench className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold">{equipo.tipo}</p>
-                      {(equipo.marca || equipo.modelo) && (
-                        <p className="text-sm text-muted-foreground">
-                          {equipo.marca} {equipo.modelo}
-                        </p>
-                      )}
-                      {equipo.numero_serie && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          S/N: {equipo.numero_serie}
-                        </p>
-                      )}
-                      {equipo.fecha_instalacion && (
-                        <p className="text-xs text-muted-foreground">
-                          Instalado: {new Date(equipo.fecha_instalacion).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
+                    {cliente.persona_contacto && (
+                      <div className="space-y-1 col-span-2">
+                        <Label className="text-muted-foreground">Persona de Contacto</Label>
+                        <p className="font-medium">{cliente.persona_contacto}</p>
+                      </div>
+                    )}
+                    {cliente.telefono && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Teléfono</Label>
+                        <a href={`tel:${cliente.telefono}`} className="font-medium hover:text-primary">
+                          {cliente.telefono}
+                        </a>
+                      </div>
+                    )}
+                    {cliente.email && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Email</Label>
+                        <a href={`mailto:${cliente.email}`} className="font-medium hover:text-primary">
+                          {cliente.email}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                {(cliente.nombre_encargado || cliente.telefono_encargado) && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Encargado</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {cliente.nombre_encargado && (
+                        <div className="space-y-1">
+                          <Label className="text-muted-foreground">Nombre del Encargado</Label>
+                          <p className="font-medium">{cliente.nombre_encargado}</p>
+                        </div>
+                      )}
+                      {cliente.telefono_encargado && (
+                        <div className="space-y-1">
+                          <Label className="text-muted-foreground">Teléfono del Encargado</Label>
+                          <a href={`tel:${cliente.telefono_encargado}`} className="font-medium hover:text-primary">
+                            {cliente.telefono_encargado}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="ubicacion" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Dirección</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {cliente.direccion && (
+                      <div className="space-y-1 col-span-2">
+                        <Label className="text-muted-foreground">Dirección</Label>
+                        <p className="font-medium">{cliente.direccion}</p>
+                      </div>
+                    )}
+                    {cliente.codigo_postal && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Código Postal</Label>
+                        <p className="font-medium">{cliente.codigo_postal}</p>
+                      </div>
+                    )}
+                    {cliente.poblacion && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Población</Label>
+                        <p className="font-medium">{cliente.poblacion}</p>
+                      </div>
+                    )}
+                    {cliente.provincia && (
+                      <div className="space-y-1 col-span-2">
+                        <Label className="text-muted-foreground">Provincia</Label>
+                        <p className="font-medium">{cliente.provincia}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="fiscal" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Información Fiscal</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    {cliente.selector_fiscal && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Selector Fiscal</Label>
+                        <p className="font-medium capitalize">{cliente.selector_fiscal}</p>
+                      </div>
+                    )}
+                    {cliente.r_iva && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">R. IVA</Label>
+                        <p className="font-medium">{cliente.r_iva}</p>
+                      </div>
+                    )}
+                    {cliente.epigrafe && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Epígrafe</Label>
+                        <p className="font-medium">{cliente.epigrafe}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="asesoria" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Información de la Asesoría</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {cliente.nombre_asesoria && (
+                      <div className="space-y-1 col-span-2">
+                        <Label className="text-muted-foreground">Nombre de la Asesoría</Label>
+                        <p className="font-medium">{cliente.nombre_asesoria}</p>
+                      </div>
+                    )}
+                    {cliente.telefono_asesoria && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Teléfono Asesoría</Label>
+                        <a href={`tel:${cliente.telefono_asesoria}`} className="font-medium hover:text-primary">
+                          {cliente.telefono_asesoria}
+                        </a>
+                      </div>
+                    )}
+                    {cliente.persona_contacto_asesoria && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Persona de Contacto</Label>
+                        <p className="font-medium">{cliente.persona_contacto_asesoria}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="equipos" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold">Equipos del Cliente</h3>
+                    <Dialog open={dialogEquipoOpen} onOpenChange={setDialogEquipoOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Equipo
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Agregar Equipo</DialogTitle>
+                          <DialogDescription>Registra un nuevo equipo del cliente</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Tipo de Equipo</Label>
+                            <Input
+                              value={nuevoEquipo.tipo}
+                              onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, tipo: e.target.value })}
+                              placeholder="Ej: TPV, Cash Guard, Balanza"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Marca</Label>
+                              <Input
+                                value={nuevoEquipo.marca}
+                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, marca: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Modelo</Label>
+                              <Input
+                                value={nuevoEquipo.modelo}
+                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, modelo: e.target.value })}
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Número de Serie</Label>
+                            <Input
+                              value={nuevoEquipo.numero_serie}
+                              onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie: e.target.value })}
+                            />
+                          </div>
+                          <Button onClick={agregarEquipo} className="w-full">
+                            Agregar Equipo
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  {equipos.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">No hay equipos registrados</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {equipos.map((equipo) => (
+                        <div key={equipo.id} className="p-4 border rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold">{equipo.tipo}</p>
+                              {equipo.marca && <p className="text-sm text-muted-foreground">Marca: {equipo.marca}</p>}
+                              {equipo.modelo && <p className="text-sm text-muted-foreground">Modelo: {equipo.modelo}</p>}
+                              {equipo.numero_serie && <p className="text-sm text-muted-foreground">S/N: {equipo.numero_serie}</p>}
+                              {equipo.fecha_instalacion && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Instalado: {new Date(equipo.fecha_instalacion).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="archivos" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Archivos PDF</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Funcionalidad de gestión de documentos disponible próximamente.
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="notas" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Notas e Información</h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    {cliente.notas && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Razón Social / Notas</Label>
+                        <p className="font-medium whitespace-pre-wrap">{cliente.notas}</p>
+                      </div>
+                    )}
+                    {cliente.informacion_destacada && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Información Destacada</Label>
+                        <p className="font-medium whitespace-pre-wrap">{cliente.informacion_destacada}</p>
+                      </div>
+                    )}
+                    {cliente.notas_especiales && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Notas Especiales</Label>
+                        <p className="font-medium whitespace-pre-wrap">{cliente.notas_especiales}</p>
+                      </div>
+                    )}
+                    {cliente.notas_adicionales && (
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">Notas Adicionales</Label>
+                        <p className="font-medium whitespace-pre-wrap">{cliente.notas_adicionales}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="contrato" className="space-y-6 mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Contrato de Mantenimiento</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={cliente.tiene_contrato_mantenimiento ? "default" : "secondary"}>
+                        {cliente.tiene_contrato_mantenimiento ? "Tiene Contrato" : "Sin Contrato"}
+                      </Badge>
+                    </div>
+
+                    {cliente.tiene_contrato_mantenimiento && (
+                      <div className="grid grid-cols-3 gap-4 p-4 border rounded-lg">
+                        {cliente.tipo_contrato && (
+                          <div className="space-y-1">
+                            <Label className="text-muted-foreground">Tipo de Contrato</Label>
+                            <p className="font-medium capitalize">{cliente.tipo_contrato}</p>
+                          </div>
+                        )}
+                        {cliente.fecha_alta_contrato && (
+                          <div className="space-y-1">
+                            <Label className="text-muted-foreground">Fecha de Alta</Label>
+                            <p className="font-medium">{new Date(cliente.fecha_alta_contrato).toLocaleDateString()}</p>
+                          </div>
+                        )}
+                        {cliente.fecha_caducidad_contrato && (
+                          <div className="space-y-1">
+                            <Label className="text-muted-foreground">Fecha de Caducidad</Label>
+                            <p className="font-medium">{new Date(cliente.fecha_caducidad_contrato).toLocaleDateString()}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Historial Completo de Tickets */}
       <Card>
