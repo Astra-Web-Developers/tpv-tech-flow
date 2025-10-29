@@ -365,42 +365,72 @@ export type Database = {
       equipos: {
         Row: {
           activo: boolean
+          c_inteligente: string | null
           cliente_id: string
           created_at: string
           fecha_instalacion: string | null
           id: string
+          impresora: string | null
+          instalacion: string | null
           marca: string | null
           modelo: string | null
           notas: string | null
           numero_serie: string | null
+          pendrive_c_seg: string | null
+          ram: string | null
+          software: string | null
+          tbai: string | null
           tipo: string
+          tpv: string | null
           updated_at: string
+          v: string | null
+          wind: string | null
         }
         Insert: {
           activo?: boolean
+          c_inteligente?: string | null
           cliente_id: string
           created_at?: string
           fecha_instalacion?: string | null
           id?: string
+          impresora?: string | null
+          instalacion?: string | null
           marca?: string | null
           modelo?: string | null
           notas?: string | null
           numero_serie?: string | null
+          pendrive_c_seg?: string | null
+          ram?: string | null
+          software?: string | null
+          tbai?: string | null
           tipo: string
+          tpv?: string | null
           updated_at?: string
+          v?: string | null
+          wind?: string | null
         }
         Update: {
           activo?: boolean
+          c_inteligente?: string | null
           cliente_id?: string
           created_at?: string
           fecha_instalacion?: string | null
           id?: string
+          impresora?: string | null
+          instalacion?: string | null
           marca?: string | null
           modelo?: string | null
           notas?: string | null
           numero_serie?: string | null
+          pendrive_c_seg?: string | null
+          ram?: string | null
+          software?: string | null
+          tbai?: string | null
           tipo?: string
+          tpv?: string | null
           updated_at?: string
+          v?: string | null
+          wind?: string | null
         }
         Relationships: [
           {

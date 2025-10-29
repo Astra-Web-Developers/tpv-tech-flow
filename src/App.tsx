@@ -22,6 +22,7 @@ import Stock from "./pages/Stock";
 import Furgonetas from "./pages/Furgonetas";
 import Protocolos from "./pages/Protocolos";
 import ImportarClientes from "./pages/ImportarClientes";
+import Configuracion from "./pages/Configuracion";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/furgonetas" element={<Furgonetas />} />
             <Route path="/protocolos" element={<Protocolos />} />
             <Route path="/importar-clientes" element={<ImportarClientes />} />
+            <Route path="/configuracion" element={<Configuracion />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

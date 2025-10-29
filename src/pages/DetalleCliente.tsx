@@ -48,6 +48,7 @@ import {
 import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ConfigurableSelect } from "@/components/ConfigurableSelect";
 
 interface Cliente {
   id: string;
@@ -129,7 +130,18 @@ const DetalleCliente = () => {
     marca: "",
     modelo: "",
     numero_serie: "",
+    tpv: "",
+    wind: "",
+    ram: "",
+    impresora: "",
+    software: "",
+    v: "",
+    tbai: "",
+    c_inteligente: "",
+    instalacion: "",
+    pendrive_c_seg: "",
   });
+  const [equipoConfigs, setEquipoConfigs] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     if (id) {
@@ -137,6 +149,7 @@ const DetalleCliente = () => {
       loadEquipos();
       loadTickets();
       loadContratos();
+      loadEquipoConfigs();
     }
   }, [id]);
 
@@ -241,6 +254,26 @@ const DetalleCliente = () => {
       setContratos(data || []);
     } catch (error) {
       console.error("Error cargando contratos:", error);
+    }
+  };
+
+  const loadEquipoConfigs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("configuracion")
+        .select("clave, valor")
+        .like("clave", "equipo_opciones_%");
+
+      if (error) throw error;
+
+      const configs: Record<string, string[]> = {};
+      data?.forEach((config) => {
+        const key = config.clave.replace("equipo_opciones_", "");
+        configs[key] = config.valor ? config.valor.split(",").map(v => v.trim()) : [];
+      });
+      setEquipoConfigs(configs);
+    } catch (error) {
+      console.error("Error cargando configuración de equipos:", error);
     }
   };
 
@@ -381,7 +414,22 @@ const DetalleCliente = () => {
       if (error) throw error;
 
       toast.success("Equipo agregado");
-      setNuevoEquipo({ tipo: "", marca: "", modelo: "", numero_serie: "" });
+      setNuevoEquipo({ 
+        tipo: "", 
+        marca: "", 
+        modelo: "", 
+        numero_serie: "",
+        tpv: "",
+        wind: "",
+        ram: "",
+        impresora: "",
+        software: "",
+        v: "",
+        tbai: "",
+        c_inteligente: "",
+        instalacion: "",
+        pendrive_c_seg: "",
+      });
       setDialogEquipoOpen(false);
       loadEquipos();
     } catch (error: any) {
@@ -1455,7 +1503,7 @@ const DetalleCliente = () => {
                           Agregar Equipo
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent className="max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Agregar Equipo</DialogTitle>
                           <DialogDescription>Registra un nuevo equipo del cliente</DialogDescription>
@@ -1469,6 +1517,69 @@ const DetalleCliente = () => {
                               placeholder="Ej: TPV, Cash Guard, Balanza"
                             />
                           </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>TPV</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.tpv}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, tpv: value })}
+                                options={equipoConfigs.tpv || []}
+                                placeholder="Seleccionar TPV..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Sistema Operativo (WIND)</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.wind}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, wind: value })}
+                                options={equipoConfigs.wind || []}
+                                placeholder="Seleccionar SO..."
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>RAM</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.ram}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, ram: value })}
+                                options={equipoConfigs.ram || []}
+                                placeholder="Seleccionar RAM..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Impresora</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.impresora}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, impresora: value })}
+                                options={equipoConfigs.impresora || []}
+                                placeholder="Seleccionar Impresora..."
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Software</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.software}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, software: value })}
+                                options={equipoConfigs.software || []}
+                                placeholder="Seleccionar Software..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Versión (V.)</Label>
+                              <Input
+                                value={nuevoEquipo.v}
+                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, v: e.target.value })}
+                                placeholder="Versión..."
+                              />
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>Marca</Label>
@@ -1485,6 +1596,7 @@ const DetalleCliente = () => {
                               />
                             </div>
                           </div>
+
                           <div className="space-y-2">
                             <Label>Número de Serie</Label>
                             <Input
@@ -1492,6 +1604,48 @@ const DetalleCliente = () => {
                               onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie: e.target.value })}
                             />
                           </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>TBAI</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.tbai}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, tbai: value })}
+                                options={equipoConfigs.tbai || []}
+                                placeholder="Seleccionar..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Caja Inteligente</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.c_inteligente}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, c_inteligente: value })}
+                                options={equipoConfigs.c_inteligente || []}
+                                placeholder="Seleccionar..."
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Fecha Instalación</Label>
+                              <Input
+                                type="date"
+                                value={nuevoEquipo.instalacion}
+                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, instalacion: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Pendrive C.Seg</Label>
+                              <ConfigurableSelect
+                                value={nuevoEquipo.pendrive_c_seg}
+                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, pendrive_c_seg: value })}
+                                options={equipoConfigs.pendrive_c_seg || []}
+                                placeholder="Seleccionar..."
+                              />
+                            </div>
+                          </div>
+
                           <Button onClick={agregarEquipo} className="w-full">
                             Agregar Equipo
                           </Button>
@@ -1503,23 +1657,28 @@ const DetalleCliente = () => {
                     <p className="text-muted-foreground text-center py-4">No hay equipos registrados</p>
                   ) : (
                     <div className="space-y-3">
-                      {equipos.map((equipo) => (
+                      {equipos.map((equipo: any) => (
                         <div key={equipo.id} className="p-4 border rounded-lg">
                           <div className="flex items-start justify-between">
-                            <div>
-                              <p className="font-semibold">{equipo.tipo}</p>
-                              {equipo.marca && <p className="text-sm text-muted-foreground">Marca: {equipo.marca}</p>}
-                              {equipo.modelo && (
-                                <p className="text-sm text-muted-foreground">Modelo: {equipo.modelo}</p>
-                              )}
-                              {equipo.numero_serie && (
-                                <p className="text-sm text-muted-foreground">S/N: {equipo.numero_serie}</p>
-                              )}
-                              {equipo.fecha_instalacion && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Instalado: {new Date(equipo.fecha_instalacion).toLocaleDateString()}
-                                </p>
-                              )}
+                            <div className="w-full">
+                              <p className="font-semibold text-lg mb-2">{equipo.tipo}</p>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                {equipo.tpv && <p><span className="text-muted-foreground">TPV:</span> {equipo.tpv}</p>}
+                                {equipo.wind && <p><span className="text-muted-foreground">SO:</span> {equipo.wind}</p>}
+                                {equipo.ram && <p><span className="text-muted-foreground">RAM:</span> {equipo.ram}</p>}
+                                {equipo.impresora && <p><span className="text-muted-foreground">Impresora:</span> {equipo.impresora}</p>}
+                                {equipo.software && <p><span className="text-muted-foreground">Software:</span> {equipo.software}</p>}
+                                {equipo.v && <p><span className="text-muted-foreground">Versión:</span> {equipo.v}</p>}
+                                {equipo.marca && <p><span className="text-muted-foreground">Marca:</span> {equipo.marca}</p>}
+                                {equipo.modelo && <p><span className="text-muted-foreground">Modelo:</span> {equipo.modelo}</p>}
+                                {equipo.numero_serie && <p><span className="text-muted-foreground">S/N:</span> {equipo.numero_serie}</p>}
+                                {equipo.tbai && <p><span className="text-muted-foreground">TBAI:</span> {equipo.tbai}</p>}
+                                {equipo.c_inteligente && <p><span className="text-muted-foreground">Caja Inteligente:</span> {equipo.c_inteligente}</p>}
+                                {equipo.pendrive_c_seg && <p><span className="text-muted-foreground">Pendrive C.Seg:</span> {equipo.pendrive_c_seg}</p>}
+                                {equipo.instalacion && (
+                                  <p className="col-span-2"><span className="text-muted-foreground">Instalación:</span> {new Date(equipo.instalacion).toLocaleDateString()}</p>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
