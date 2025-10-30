@@ -1161,10 +1161,14 @@ export type Database = {
           estado: string
           fecha_creacion: string
           fecha_finalizacion: string | null
+          fecha_firma: string | null
+          firma_cliente: string | null
           id: string
           motivo_eliminacion: string | null
           numero: number
           prioridad: string
+          solucion: string | null
+          tecnico_cierre_id: string | null
           tiempo_total_minutos: number
           titulo: string
           updated_at: string
@@ -1176,10 +1180,14 @@ export type Database = {
           estado?: string
           fecha_creacion?: string
           fecha_finalizacion?: string | null
+          fecha_firma?: string | null
+          firma_cliente?: string | null
           id?: string
           motivo_eliminacion?: string | null
           numero?: number
           prioridad?: string
+          solucion?: string | null
+          tecnico_cierre_id?: string | null
           tiempo_total_minutos?: number
           titulo: string
           updated_at?: string
@@ -1191,10 +1199,14 @@ export type Database = {
           estado?: string
           fecha_creacion?: string
           fecha_finalizacion?: string | null
+          fecha_firma?: string | null
+          firma_cliente?: string | null
           id?: string
           motivo_eliminacion?: string | null
           numero?: number
           prioridad?: string
+          solucion?: string | null
+          tecnico_cierre_id?: string | null
           tiempo_total_minutos?: number
           titulo?: string
           updated_at?: string
@@ -1205,6 +1217,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_tecnico_cierre_id_fkey"
+            columns: ["tecnico_cierre_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

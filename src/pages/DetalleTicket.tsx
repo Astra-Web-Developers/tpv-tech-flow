@@ -21,6 +21,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Edit,
+  RotateCcw,
+  FileCheck,
 } from "lucide-react";
 import {
   Dialog,
@@ -33,6 +35,8 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DialogoCerrarTicket } from "@/components/DialogoCerrarTicket";
+import { DialogoFirmaTicket } from "@/components/DialogoFirmaTicket";
 
 interface Ticket {
   id: string;
@@ -45,6 +49,10 @@ interface Ticket {
   fecha_creacion: string;
   cliente_id: string | null;
   clientes: { nombre: string; telefono: string; direccion: string; email: string; cif: string } | null;
+  tecnico_cierre_id: string | null;
+  solucion: string | null;
+  firma_cliente: string | null;
+  fecha_firma: string | null;
 }
 
 interface Material {
@@ -80,6 +88,8 @@ const DetalleTicket = () => {
   const [dialogTiempoManualOpen, setDialogTiempoManualOpen] = useState(false);
   const [tiempoManual, setTiempoManual] = useState({ inicio: "", fin: "", notas: "" });
   const [tiempoTotalCliente, setTiempoTotalCliente] = useState(0);
+  const [dialogCerrarOpen, setDialogCerrarOpen] = useState(false);
+  const [dialogFirmaOpen, setDialogFirmaOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -309,31 +319,37 @@ const DetalleTicket = () => {
     }
   };
 
-  const marcarComoResuelto = async () => {
-    try {
-      // Detener el temporizador si está activo
-      if (temporizadorActivo && tiempoActualId) {
-        await supabase.from("historial_tiempo").update({ fin: new Date().toISOString() }).eq("id", tiempoActualId);
-      }
+  const abrirDialogoCerrar = () => {
+    // Detener el temporizador si está activo antes de cerrar
+    if (temporizadorActivo && tiempoActualId) {
+      supabase.from("historial_tiempo").update({ fin: new Date().toISOString() }).eq("id", tiempoActualId);
+      setTemporizadorActivo(false);
+      setTiempoActualId(null);
+    }
+    setDialogCerrarOpen(true);
+  };
 
+  const reabrirTicket = async () => {
+    try {
       const { error } = await supabase
         .from("tickets")
         .update({
-          estado: "finalizado",
-          fecha_finalizacion: new Date().toISOString(),
+          estado: "activo",
+          tecnico_cierre_id: null,
+          solucion: null,
+          firma_cliente: null,
+          fecha_firma: null,
+          fecha_finalizacion: null,
         })
         .eq("id", id);
 
       if (error) throw error;
 
-      setTemporizadorActivo(false);
-      setTiempoActualId(null);
-      toast.success("Ticket marcado como resuelto");
+      toast.success("Ticket reabierto correctamente");
       loadTicket();
-      loadHistorial();
     } catch (error: any) {
-      console.error("Error finalizando ticket:", error);
-      toast.error(error.message || "Error al finalizar ticket");
+      console.error("Error reabriendo ticket:", error);
+      toast.error(error.message || "Error al reabrir ticket");
     }
   };
 
@@ -506,19 +522,47 @@ const DetalleTicket = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {ticket.estado === "finalizado" && (
-              <Alert className="bg-success/10 border-success">
-                <CheckCircle className="h-4 w-4 text-success" />
-                <AlertDescription className="text-success-foreground text-black">
-                  Este ticket ha sido resuelto
-                </AlertDescription>
-              </Alert>
+              <>
+                <Alert className="bg-success/10 border-success mb-4">
+                  <CheckCircle className="h-4 w-4 text-success" />
+                  <AlertDescription className="text-success-foreground text-black">
+                    Este ticket ha sido resuelto
+                  </AlertDescription>
+                </Alert>
+
+                {ticket.solucion && (
+                  <div className="p-4 bg-muted/50 rounded-lg mb-4">
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+                      Solución aplicada
+                    </Label>
+                    <p className="text-sm whitespace-pre-wrap">{ticket.solucion}</p>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Button onClick={reabrirTicket} className="w-full" size="lg" variant="outline">
+                    <RotateCcw className="h-5 w-5 mr-2" />
+                    Reabrir Ticket
+                  </Button>
+
+                  <Button
+                    onClick={() => setDialogFirmaOpen(true)}
+                    className="w-full"
+                    size="lg"
+                    variant={ticket.firma_cliente ? "secondary" : "default"}
+                  >
+                    <FileCheck className="h-5 w-5 mr-2" />
+                    {ticket.firma_cliente ? "Ver Firma y Enviar" : "Firmar y Enviar"}
+                  </Button>
+                </div>
+              </>
             )}
 
             {ticket.estado === "activo" && (
               <div className="space-y-3">
-                <Button onClick={marcarComoResuelto} className="w-full" size="lg" variant="default">
+                <Button onClick={abrirDialogoCerrar} className="w-full" size="lg" variant="default">
                   <CheckCircle className="h-5 w-5 mr-2" />
-                  Marcar como Resuelto
+                  Cerrar Ticket
                 </Button>
                 <Button onClick={() => setDialogEliminarOpen(true)} variant="destructive" className="w-full" size="lg">
                   <Trash2 className="h-5 w-5 mr-2" />
@@ -892,6 +936,27 @@ const DetalleTicket = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo de Cerrar Ticket */}
+      <DialogoCerrarTicket
+        open={dialogCerrarOpen}
+        onOpenChange={setDialogCerrarOpen}
+        ticketId={id!}
+        onTicketCerrado={() => {
+          loadTicket();
+          loadHistorial();
+        }}
+      />
+
+      {/* Diálogo de Firma */}
+      {ticket && (
+        <DialogoFirmaTicket
+          open={dialogFirmaOpen}
+          onOpenChange={setDialogFirmaOpen}
+          ticket={ticket}
+          cliente={ticket.clientes}
+        />
+      )}
     </div>
   );
 };
