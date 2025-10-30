@@ -107,6 +107,8 @@ const DetalleTicket = () => {
     descripcion: "",
     prioridad: "",
   });
+  const [tecnicos, setTecnicos] = useState<any[]>([]);
+  const [tecnicosAsignados, setTecnicosAsignados] = useState<string[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -115,6 +117,8 @@ const DetalleTicket = () => {
       loadHistorial();
       loadEtiquetas();
       loadEtiquetasTicket();
+      loadTecnicos();
+      loadTecnicosAsignados();
     }
   }, [id]);
 
@@ -294,7 +298,8 @@ const DetalleTicket = () => {
 
   const guardarEdicion = async () => {
     try {
-      const { error } = await supabase
+      // Actualizar información básica del ticket
+      const { error: updateError } = await supabase
         .from("tickets")
         .update({
           titulo: editFormData.titulo,
@@ -303,15 +308,81 @@ const DetalleTicket = () => {
         })
         .eq("id", id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Obtener técnicos actuales
+      const { data: currentTecnicos } = await supabase
+        .from("tickets_tecnicos")
+        .select("tecnico_id")
+        .eq("ticket_id", id);
+
+      const currentIds = currentTecnicos?.map(t => t.tecnico_id) || [];
+
+      // Eliminar técnicos que ya no están asignados
+      const toRemove = currentIds.filter(id => !tecnicosAsignados.includes(id));
+      if (toRemove.length > 0) {
+        await supabase
+          .from("tickets_tecnicos")
+          .delete()
+          .eq("ticket_id", id)
+          .in("tecnico_id", toRemove);
+      }
+
+      // Agregar nuevos técnicos
+      const toAdd = tecnicosAsignados.filter(id => !currentIds.includes(id));
+      if (toAdd.length > 0) {
+        const inserts = toAdd.map(tecnico_id => ({
+          ticket_id: id,
+          tecnico_id,
+        }));
+        await supabase.from("tickets_tecnicos").insert(inserts);
+      }
 
       toast.success("Ticket actualizado correctamente");
       setDialogEditarOpen(false);
       loadTicket();
+      loadTecnicosAsignados();
     } catch (error: any) {
       console.error("Error actualizando ticket:", error);
       toast.error(error.message || "Error al actualizar el ticket");
     }
+  };
+
+  const loadTecnicos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nombre, apellidos")
+        .eq("activo", true)
+        .order("nombre");
+
+      if (error) throw error;
+      setTecnicos(data || []);
+    } catch (error) {
+      console.error("Error cargando técnicos:", error);
+    }
+  };
+
+  const loadTecnicosAsignados = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tickets_tecnicos")
+        .select("tecnico_id")
+        .eq("ticket_id", id);
+
+      if (error) throw error;
+      setTecnicosAsignados(data?.map(t => t.tecnico_id) || []);
+    } catch (error) {
+      console.error("Error cargando técnicos asignados:", error);
+    }
+  };
+
+  const toggleTecnico = (tecnicoId: string) => {
+    setTecnicosAsignados(prev => 
+      prev.includes(tecnicoId)
+        ? prev.filter(id => id !== tecnicoId)
+        : [...prev, tecnicoId]
+    );
   };
 
   const agregarTiempoManual = async () => {
@@ -649,7 +720,7 @@ const DetalleTicket = () => {
               <span>Información del Ticket</span>
               <Dialog open={dialogEditarOpen} onOpenChange={setDialogEditarOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => loadTecnicosAsignados()}>
                     <Edit className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
@@ -692,6 +763,30 @@ const DetalleTicket = () => {
                           <SelectItem value="urgente">Urgente</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Técnicos Asignados</Label>
+                      <div className="grid grid-cols-2 gap-2 p-4 border rounded-md max-h-[200px] overflow-y-auto">
+                        {tecnicos.length === 0 ? (
+                          <p className="text-sm text-muted-foreground col-span-2">No hay técnicos disponibles</p>
+                        ) : (
+                          tecnicos.map((tecnico) => (
+                            <div key={tecnico.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`edit-tecnico-${tecnico.id}`}
+                                checked={tecnicosAsignados.includes(tecnico.id)}
+                                onChange={() => toggleTecnico(tecnico.id)}
+                                className="h-4 w-4 rounded border-gray-300"
+                              />
+                              <label htmlFor={`edit-tecnico-${tecnico.id}`} className="text-sm cursor-pointer">
+                                {tecnico.nombre} {tecnico.apellidos}
+                              </label>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
