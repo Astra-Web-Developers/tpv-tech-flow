@@ -109,6 +109,7 @@ const DetalleTicket = () => {
   });
   const [tecnicos, setTecnicos] = useState<any[]>([]);
   const [tecnicosAsignados, setTecnicosAsignados] = useState<string[]>([]);
+  const [tecnicosAsignadosInfo, setTecnicosAsignadosInfo] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -367,11 +368,20 @@ const DetalleTicket = () => {
     try {
       const { data, error } = await supabase
         .from("tickets_tecnicos")
-        .select("tecnico_id")
+        .select(`
+          tecnico_id,
+          profiles:tecnico_id (
+            id,
+            nombre,
+            apellidos
+          )
+        `)
         .eq("ticket_id", id);
 
       if (error) throw error;
+      
       setTecnicosAsignados(data?.map(t => t.tecnico_id) || []);
+      setTecnicosAsignadosInfo(data?.map(t => t.profiles) || []);
     } catch (error) {
       console.error("Error cargando técnicos asignados:", error);
     }
@@ -830,7 +840,17 @@ const DetalleTicket = () => {
                 <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
                   Asignado a
                 </Label>
-                <p className="font-medium">Técnico</p>
+                {tecnicosAsignadosInfo.length > 0 ? (
+                  <div className="flex flex-col gap-1">
+                    {tecnicosAsignadosInfo.map((tecnico, index) => (
+                      <p key={index} className="font-medium">
+                        {tecnico.nombre} {tecnico.apellidos || ""}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">Sin asignar</p>
+                )}
               </div>
             </div>
           </CardContent>
