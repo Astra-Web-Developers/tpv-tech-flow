@@ -23,6 +23,7 @@ import {
   Edit,
   RotateCcw,
   FileCheck,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -37,6 +38,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DialogoCerrarTicket } from "@/components/DialogoCerrarTicket";
 import { DialogoFirmaTicket } from "@/components/DialogoFirmaTicket";
+
+interface Etiqueta {
+  id: string;
+  nombre: string;
+  color: string;
+}
 
 interface Ticket {
   id: string;
@@ -53,6 +60,7 @@ interface Ticket {
   solucion: string | null;
   firma_cliente: string | null;
   fecha_firma: string | null;
+  etiquetas?: Etiqueta[];
 }
 
 interface Material {
@@ -90,12 +98,17 @@ const DetalleTicket = () => {
   const [tiempoTotalCliente, setTiempoTotalCliente] = useState(0);
   const [dialogCerrarOpen, setDialogCerrarOpen] = useState(false);
   const [dialogFirmaOpen, setDialogFirmaOpen] = useState(false);
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
+  const [etiquetasTicket, setEtiquetasTicket] = useState<Etiqueta[]>([]);
+  const [dialogEtiquetasOpen, setDialogEtiquetasOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadTicket();
       loadMateriales();
       loadHistorial();
+      loadEtiquetas();
+      loadEtiquetasTicket();
     }
   }, [id]);
 
@@ -194,6 +207,75 @@ const DetalleTicket = () => {
       setTiempoTotalCliente(total);
     } catch (error) {
       console.error("Error cargando tiempo total del cliente:", error);
+    }
+  };
+
+  const loadEtiquetas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("etiquetas")
+        .select("*")
+        .order("nombre");
+
+      if (error) throw error;
+      setEtiquetas(data || []);
+    } catch (error) {
+      console.error("Error cargando etiquetas:", error);
+    }
+  };
+
+  const loadEtiquetasTicket = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tickets_etiquetas")
+        .select(`
+          etiquetas (
+            id,
+            nombre,
+            color
+          )
+        `)
+        .eq("ticket_id", id);
+
+      if (error) throw error;
+      setEtiquetasTicket(data?.map((e: any) => e.etiquetas) || []);
+    } catch (error) {
+      console.error("Error cargando etiquetas del ticket:", error);
+    }
+  };
+
+  const agregarEtiqueta = async (etiquetaId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tickets_etiquetas")
+        .insert([{ ticket_id: id, etiqueta_id: etiquetaId }]);
+
+      if (error) throw error;
+
+      toast.success("Etiqueta agregada");
+      loadEtiquetasTicket();
+      setDialogEtiquetasOpen(false);
+    } catch (error: any) {
+      console.error("Error agregando etiqueta:", error);
+      toast.error(error.message || "Error al agregar etiqueta");
+    }
+  };
+
+  const eliminarEtiqueta = async (etiquetaId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tickets_etiquetas")
+        .delete()
+        .eq("ticket_id", id)
+        .eq("etiqueta_id", etiquetaId);
+
+      if (error) throw error;
+
+      toast.success("Etiqueta eliminada");
+      loadEtiquetasTicket();
+    } catch (error: any) {
+      console.error("Error eliminando etiqueta:", error);
+      toast.error(error.message || "Error al eliminar etiqueta");
     }
   };
 
@@ -463,6 +545,63 @@ const DetalleTicket = () => {
                 minute: "2-digit",
               })}
             </p>
+            {/* Etiquetas */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {etiquetasTicket.map((etiqueta) => (
+                <Badge
+                  key={etiqueta.id}
+                  style={{ backgroundColor: etiqueta.color }}
+                  className="text-white px-3 py-1 flex items-center gap-2"
+                >
+                  {etiqueta.nombre}
+                  {ticket.estado === "activo" && (
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:opacity-70"
+                      onClick={() => eliminarEtiqueta(etiqueta.id)}
+                    />
+                  )}
+                </Badge>
+              ))}
+              {ticket.estado === "activo" && (
+                <Dialog open={dialogEtiquetasOpen} onOpenChange={setDialogEtiquetasOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7">
+                      <Plus className="h-3 w-3 mr-1" />
+                      Etiqueta
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Agregar Etiqueta</DialogTitle>
+                      <DialogDescription>Selecciona una etiqueta para agregar al ticket</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-2 py-4">
+                      {etiquetas
+                        .filter((e) => !etiquetasTicket.find((et) => et.id === e.id))
+                        .map((etiqueta) => (
+                          <Button
+                            key={etiqueta.id}
+                            variant="outline"
+                            className="justify-start"
+                            onClick={() => agregarEtiqueta(etiqueta.id)}
+                          >
+                            <div
+                              className="w-4 h-4 rounded-full mr-2"
+                              style={{ backgroundColor: etiqueta.color }}
+                            />
+                            {etiqueta.nombre}
+                          </Button>
+                        ))}
+                      {etiquetas.filter((e) => !etiquetasTicket.find((et) => et.id === e.id)).length === 0 && (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Todas las etiquetas ya están asignadas
+                        </p>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
           </div>
         </div>
       </div>

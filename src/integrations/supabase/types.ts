@@ -1228,6 +1228,42 @@ export type Database = {
           },
         ]
       }
+      tickets_etiquetas: {
+        Row: {
+          created_at: string
+          etiqueta_id: string
+          id: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          etiqueta_id: string
+          id?: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          etiqueta_id?: string
+          id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_etiquetas_etiqueta_id_fkey"
+            columns: ["etiqueta_id"]
+            isOneToOne: false
+            referencedRelation: "etiquetas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_etiquetas_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets_tecnicos: {
         Row: {
           asignado_at: string

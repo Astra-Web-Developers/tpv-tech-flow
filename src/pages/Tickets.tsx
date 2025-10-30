@@ -10,6 +10,12 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+interface Etiqueta {
+  id: string;
+  nombre: string;
+  color: string;
+}
+
 interface Ticket {
   id: string;
   numero: number;
@@ -19,6 +25,7 @@ interface Ticket {
   fecha_creacion: string;
   tiempo_total_minutos: number;
   clientes: { nombre: string } | null;
+  etiquetas?: Etiqueta[];
 }
 
 const Tickets = () => {
@@ -29,14 +36,31 @@ const Tickets = () => {
   const [vistaActual, setVistaActual] = useState<"lista" | "kanban">("kanban");
   const [ordenarPor, setOrdenarPor] = useState<"prioridad" | "fecha" | "estado">("prioridad");
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
+  const [etiquetaSeleccionada, setEtiquetaSeleccionada] = useState<string>("todas");
 
   useEffect(() => {
     loadTickets();
+    loadEtiquetas();
   }, []);
+
+  const loadEtiquetas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("etiquetas")
+        .select("*")
+        .order("nombre");
+
+      if (error) throw error;
+      setEtiquetas(data || []);
+    } catch (error) {
+      console.error("Error cargando etiquetas:", error);
+    }
+  };
 
   const loadTickets = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: ticketsData, error } = await supabase
         .from("tickets")
         .select(`
           id,
@@ -51,7 +75,29 @@ const Tickets = () => {
         .order("fecha_creacion", { ascending: false });
 
       if (error) throw error;
-      setTickets(data || []);
+
+      // Cargar etiquetas para cada ticket
+      const ticketsConEtiquetas = await Promise.all(
+        (ticketsData || []).map(async (ticket) => {
+          const { data: etiquetasData } = await supabase
+            .from("tickets_etiquetas")
+            .select(`
+              etiquetas (
+                id,
+                nombre,
+                color
+              )
+            `)
+            .eq("ticket_id", ticket.id);
+
+          return {
+            ...ticket,
+            etiquetas: etiquetasData?.map((e: any) => e.etiquetas) || [],
+          };
+        })
+      );
+
+      setTickets(ticketsConEtiquetas);
     } catch (error) {
       console.error("Error cargando tickets:", error);
       toast.error("Error al cargar tickets");
@@ -84,11 +130,16 @@ const Tickets = () => {
       const matchesSearch =
         ticket.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ticket.numero.toString().includes(searchTerm) ||
-        ticket.clientes?.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+        ticket.clientes?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ticket.etiquetas?.some(e => e.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesEstado = filtroEstado === "todos" || ticket.estado === filtroEstado;
 
-      return matchesSearch && matchesEstado;
+      const matchesEtiqueta = 
+        etiquetaSeleccionada === "todas" || 
+        ticket.etiquetas?.some(e => e.id === etiquetaSeleccionada);
+
+      return matchesSearch && matchesEstado && matchesEtiqueta;
     })
     .sort((a, b) => {
       if (ordenarPor === "prioridad") {
@@ -165,6 +216,19 @@ const Tickets = () => {
           <CardDescription className="text-xs">
             {ticket.clientes?.nombre || "Sin cliente"}
           </CardDescription>
+          {ticket.etiquetas && ticket.etiquetas.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-1">
+              {ticket.etiquetas.map((etiqueta) => (
+                <Badge
+                  key={etiqueta.id}
+                  style={{ backgroundColor: etiqueta.color }}
+                  className="text-white text-[10px] px-1.5 py-0"
+                >
+                  {etiqueta.nombre}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -212,12 +276,32 @@ const Tickets = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por título, número o cliente..."
+            placeholder="Buscar por título, número, cliente o etiqueta..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
+
+        <Select value={etiquetaSeleccionada} onValueChange={setEtiquetaSeleccionada}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Todas las etiquetas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas las etiquetas</SelectItem>
+            {etiquetas.map((etiqueta) => (
+              <SelectItem key={etiqueta.id} value={etiqueta.id}>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: etiqueta.color }}
+                  />
+                  {etiqueta.nombre}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Select value={ordenarPor} onValueChange={(value: any) => setOrdenarPor(value)}>
           <SelectTrigger className="w-full sm:w-[200px]">

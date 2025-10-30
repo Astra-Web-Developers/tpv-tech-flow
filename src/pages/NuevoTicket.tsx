@@ -10,6 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 
+interface Etiqueta {
+  id: string;
+  nombre: string;
+  color: string;
+}
+
 interface Cliente {
   id: string;
   nombre: string;
@@ -28,17 +34,20 @@ const NuevoTicket = () => {
   const [loading, setLoading] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [formData, setFormData] = useState({
     titulo: "",
     descripcion: "",
     prioridad: "media",
     cliente_id: clienteIdParam || "",
     tecnicos_asignados: [] as string[],
+    etiquetas_seleccionadas: [] as string[],
   });
 
   useEffect(() => {
     loadClientes();
     loadTecnicos();
+    loadEtiquetas();
   }, []);
 
   useEffect(() => {
@@ -74,6 +83,20 @@ const NuevoTicket = () => {
       setTecnicos(data || []);
     } catch (error) {
       console.error("Error cargando técnicos:", error);
+    }
+  };
+
+  const loadEtiquetas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("etiquetas")
+        .select("*")
+        .order("nombre");
+
+      if (error) throw error;
+      setEtiquetas(data || []);
+    } catch (error) {
+      console.error("Error cargando etiquetas:", error);
     }
   };
 
@@ -114,6 +137,20 @@ const NuevoTicket = () => {
         if (asignError) throw asignError;
       }
 
+      // Asignar etiquetas
+      if (formData.etiquetas_seleccionadas.length > 0) {
+        const etiquetasAsignacion = formData.etiquetas_seleccionadas.map(etiqueta_id => ({
+          ticket_id: ticket.id,
+          etiqueta_id,
+        }));
+
+        const { error: etiquetasError } = await supabase
+          .from("tickets_etiquetas")
+          .insert(etiquetasAsignacion);
+
+        if (etiquetasError) throw etiquetasError;
+      }
+
       toast.success("Ticket creado exitosamente");
       navigate(`/tickets/${ticket.id}`);
     } catch (error: any) {
@@ -130,6 +167,15 @@ const NuevoTicket = () => {
       tecnicos_asignados: prev.tecnicos_asignados.includes(tecnicoId)
         ? prev.tecnicos_asignados.filter(id => id !== tecnicoId)
         : [...prev.tecnicos_asignados, tecnicoId]
+    }));
+  };
+
+  const toggleEtiqueta = (etiquetaId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      etiquetas_seleccionadas: prev.etiquetas_seleccionadas.includes(etiquetaId)
+        ? prev.etiquetas_seleccionadas.filter(id => id !== etiquetaId)
+        : [...prev.etiquetas_seleccionadas, etiquetaId]
     }));
   };
 
@@ -222,6 +268,34 @@ const NuevoTicket = () => {
                         />
                         <label htmlFor={`tecnico-${tecnico.id}`} className="text-sm cursor-pointer">
                           {tecnico.nombre}
+                        </label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label>Etiquetas</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-4 border rounded-md">
+                  {etiquetas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground col-span-3">No hay etiquetas disponibles</p>
+                  ) : (
+                    etiquetas.map((etiqueta) => (
+                      <div key={etiqueta.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`etiqueta-${etiqueta.id}`}
+                          checked={formData.etiquetas_seleccionadas.includes(etiqueta.id)}
+                          onChange={() => toggleEtiqueta(etiqueta.id)}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <label htmlFor={`etiqueta-${etiqueta.id}`} className="text-sm cursor-pointer flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: etiqueta.color }}
+                          />
+                          {etiqueta.nombre}
                         </label>
                       </div>
                     ))
