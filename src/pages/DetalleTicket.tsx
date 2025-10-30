@@ -414,165 +414,198 @@ const DetalleTicket = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate("/tickets")}>
+    <div className="space-y-6 pb-8">
+      {/* Header mejorado */}
+      <div className="flex items-start justify-between gap-4 pb-6 border-b">
+        <div className="flex items-start gap-4 flex-1">
+          <Button variant="outline" size="icon" onClick={() => navigate("/tickets")} className="mt-1">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Ticket #{ticket.numero}</h1>
-            <p className="text-muted-foreground">{ticket.titulo}</p>
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-4xl font-bold tracking-tight">Ticket #{ticket.numero}</h1>
+              <div className="flex gap-2">
+                <Badge variant={getPrioridadColor(ticket.prioridad)} className="text-sm px-3 py-1 capitalize">
+                  {ticket.prioridad}
+                </Badge>
+                <Badge 
+                  variant={ticket.estado === "activo" ? "default" : "success"}
+                  className="text-sm px-3 py-1 capitalize"
+                >
+                  {ticket.estado === "activo" ? "En Progreso" : "Finalizado"}
+                </Badge>
+              </div>
+            </div>
+            <p className="text-xl text-muted-foreground">{ticket.titulo}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Creado el {new Date(ticket.fecha_creacion).toLocaleDateString("es-ES", { 
+                day: "numeric", 
+                month: "long", 
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              })}
+            </p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Badge variant={getPrioridadColor(ticket.prioridad)}>{ticket.prioridad}</Badge>
-          <Badge variant={ticket.estado === "activo" ? "default" : "success"}>{ticket.estado}</Badge>
-        </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Detalles principales */}
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Detalles del Ticket</CardTitle>
-            <Button variant="ghost" size="sm" className="absolute top-4 right-4">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-muted-foreground text-sm">Título</Label>
-              <p className="font-medium">{ticket.titulo}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Cliente</Label>
-              <p className="font-medium text-primary cursor-pointer hover:underline">
-                {ticket.clientes?.nombre || "Sin cliente"}
-              </p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Asignado a</Label>
-              <p>Técnico</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Estado</Label>
-              <Badge variant={ticket.estado === "activo" ? "default" : "success"}>
-                {ticket.estado === "activo" ? "Activo" : "Finalizado"}
-              </Badge>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Prioridad</Label>
-              <Badge variant={getPrioridadColor(ticket.prioridad)} className="capitalize">
-                {ticket.prioridad}
-              </Badge>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Fecha de Creación</Label>
-              <p className="text-sm">{new Date(ticket.fecha_creacion).toLocaleString()}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-sm">Descripción</Label>
-              <p className="text-sm">{ticket.descripcion || "Sin descripción"}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Cliente y Acciones</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Información del Cliente */}
-            <div className="space-y-3 pb-4 border-b">
-              <div>
-                <p className="font-semibold text-lg">{ticket.clientes?.nombre || "Sin cliente"}</p>
-              </div>
-              {ticket.clientes?.cif && (
-                <div className="flex items-start gap-2">
-                  <span className="text-muted-foreground">ID: </span>
-                  <span>{ticket.clientes.cif}</span>
-                </div>
-              )}
-              {ticket.clientes?.telefono && (
-                <div className="flex items-start gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <a href={`tel:${ticket.clientes.telefono}`} className="hover:text-primary hover:underline">
-                    {ticket.clientes.telefono}
-                  </a>
-                </div>
-              )}
-              {ticket.clientes?.email && (
-                <div className="flex items-start gap-2">
-                  <span className="text-muted-foreground">✉</span>
-                  <a href={`mailto:${ticket.clientes.email}`} className="hover:text-primary hover:underline text-sm">
-                    {ticket.clientes.email}
-                  </a>
-                </div>
-              )}
-              {ticket.clientes?.direccion && (
-                <div className="flex items-start gap-2">
-                  <Navigation className="h-4 w-4 text-muted-foreground mt-0.5" />
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ticket.clientes.direccion)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary hover:underline text-sm"
-                  >
-                    {ticket.clientes.direccion}
-                  </a>
-                </div>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => navigate(`/clientes/${ticket.cliente_id}`)}
-              >
-                Ver Perfil Completo
+            <CardTitle className="flex items-center justify-between">
+              <span>Información del Ticket</span>
+              <Button variant="ghost" size="sm">
+                <Edit className="h-4 w-4" />
               </Button>
-            </div>
-
-            {/* Acciones Rápidas */}
-            <div className="space-y-3">
-              {ticket.estado === "activo" && (
-                <>
-                  <Button onClick={marcarComoResuelto} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Marcar como Resuelto
-                  </Button>
-                  <Button
-                    onClick={() => setDialogEliminarOpen(true)}
-                    variant="destructive"
-                    className="w-full"
-                    size="lg"
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {ticket.descripcion && (
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+                  Descripción
+                </Label>
+                <p className="text-sm leading-relaxed">{ticket.descripcion}</p>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+                  Cliente
+                </Label>
+                {ticket.clientes ? (
+                  <p 
+                    className="font-medium text-primary cursor-pointer hover:underline"
+                    onClick={() => ticket.cliente_id && navigate(`/clientes/${ticket.cliente_id}`)}
                   >
-                    <Trash2 className="h-5 w-5 mr-2" />
-                    Eliminar Ticket
-                  </Button>
-                </>
-              )}
-              {ticket.estado === "finalizado" && (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>Este ticket ya ha sido resuelto</AlertDescription>
-                </Alert>
-              )}
+                    {ticket.clientes.nombre}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">Sin asignar</p>
+                )}
+              </div>
+              
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+                  Asignado a
+                </Label>
+                <p className="font-medium">Técnico</p>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Acciones y Cliente */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Acciones</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {ticket.estado === "finalizado" && (
+              <Alert className="bg-success/10 border-success">
+                <CheckCircle className="h-4 w-4 text-success" />
+                <AlertDescription className="text-success-foreground">
+                  Este ticket ha sido resuelto
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {ticket.estado === "activo" && (
+              <div className="space-y-3">
+                <Button onClick={marcarComoResuelto} className="w-full" size="lg" variant="default">
+                  <CheckCircle className="h-5 w-5 mr-2" />
+                  Marcar como Resuelto
+                </Button>
+                <Button
+                  onClick={() => setDialogEliminarOpen(true)}
+                  variant="destructive"
+                  className="w-full"
+                  size="lg"
+                >
+                  <Trash2 className="h-5 w-5 mr-2" />
+                  Eliminar Ticket
+                </Button>
+              </div>
+            )}
+
+            {ticket.clientes && (
+              <>
+                <div className="border-t pt-4 mt-4">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 block">
+                    Información del Cliente
+                  </Label>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-semibold text-base">{ticket.clientes.nombre}</p>
+                      {ticket.clientes.cif && (
+                        <p className="text-sm text-muted-foreground">CIF: {ticket.clientes.cif}</p>
+                      )}
+                    </div>
+                    
+                    {ticket.clientes.telefono && (
+                      <a 
+                        href={`tel:${ticket.clientes.telefono}`} 
+                        className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                      >
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{ticket.clientes.telefono}</span>
+                      </a>
+                    )}
+                    
+                    {ticket.clientes.email && (
+                      <a 
+                        href={`mailto:${ticket.clientes.email}`} 
+                        className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
+                      >
+                        <span className="text-muted-foreground">✉</span>
+                        <span className="break-all">{ticket.clientes.email}</span>
+                      </a>
+                    )}
+                    
+                    {ticket.clientes.direccion && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ticket.clientes.direccion)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-2 text-sm hover:text-primary transition-colors"
+                      >
+                        <Navigation className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <span>{ticket.clientes.direccion}</span>
+                      </a>
+                    )}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-3"
+                      onClick={() => navigate(`/clientes/${ticket.cliente_id}`)}
+                    >
+                      Ver Perfil Completo
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Materiales */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Materiales Utilizados</CardTitle>
-            <Dialog open={dialogMaterialOpen} onOpenChange={setDialogMaterialOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Material
-                </Button>
-              </DialogTrigger>
+            {ticket.estado === "activo" && (
+              <Dialog open={dialogMaterialOpen} onOpenChange={setDialogMaterialOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Agregar Material</DialogTitle>
@@ -615,38 +648,51 @@ const DetalleTicket = () => {
                   </Button>
                 </div>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           {materiales.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No se han agregado materiales</p>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No se han agregado materiales a este ticket</p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {materiales.map((material) => (
-                <div key={material.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{material.nombre}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Cantidad: {material.cantidad} × {material.precio_unitario}€ ={" "}
-                      {(material.cantidad * material.precio_unitario).toFixed(2)}€
+                <div key={material.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex-1">
+                    <p className="font-medium text-base">{material.nombre}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {material.cantidad} {material.cantidad === 1 ? "unidad" : "unidades"} × {material.precio_unitario.toFixed(2)}€
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => eliminarMaterial(material.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <p className="font-semibold text-lg">
+                      {(material.cantidad * material.precio_unitario).toFixed(2)}€
+                    </p>
+                    {ticket.estado === "activo" && (
+                      <Button variant="ghost" size="icon" onClick={() => eliminarMaterial(material.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ))}
-              <div className="pt-2 border-t">
-                <p className="text-right font-bold">
-                  Total: {materiales.reduce((sum, m) => sum + m.cantidad * m.precio_unitario, 0).toFixed(2)}€
-                </p>
+              <div className="pt-3 border-t mt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-semibold">Total Materiales</p>
+                  <p className="text-2xl font-bold">
+                    {materiales.reduce((sum, m) => sum + m.cantidad * m.precio_unitario, 0).toFixed(2)}€
+                  </p>
+                </div>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Registro de Tiempo */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -654,13 +700,14 @@ const DetalleTicket = () => {
               <Clock className="h-5 w-5" />
               <CardTitle>Registro de Tiempo</CardTitle>
             </div>
-            <Dialog open={dialogTiempoManualOpen} onOpenChange={setDialogTiempoManualOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="default">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Añadir Registro
-                </Button>
-              </DialogTrigger>
+            {ticket.estado === "activo" && (
+              <Dialog open={dialogTiempoManualOpen} onOpenChange={setDialogTiempoManualOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Añadir Manual
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Añadir Registro de Tiempo</DialogTitle>
@@ -702,80 +749,92 @@ const DetalleTicket = () => {
                   <Button onClick={agregarTiempoManual}>Agregar</Button>
                 </DialogFooter>
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-            <div>
-              <p className="text-sm text-muted-foreground">Tiempo total dedicado:</p>
-              <p className="text-2xl font-bold">
+        <CardContent className="space-y-6">
+          {/* Resumen de tiempo */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-5 bg-primary/5 rounded-lg border border-primary/20">
+              <p className="text-sm text-muted-foreground mb-1">Tiempo Total del Ticket</p>
+              <p className="text-3xl font-bold text-primary">
                 {Math.floor(ticket.tiempo_total_minutos / 60)}h {ticket.tiempo_total_minutos % 60}min
               </p>
             </div>
             {ticket.cliente_id && tiempoTotalCliente > 0 && (
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Tiempo total del cliente:</p>
-                <p className="text-lg font-semibold text-primary">
+              <div className="p-5 bg-muted/50 rounded-lg border">
+                <p className="text-sm text-muted-foreground mb-1">Tiempo Total del Cliente</p>
+                <p className="text-3xl font-bold">
                   {Math.floor(tiempoTotalCliente / 60)}h {tiempoTotalCliente % 60}min
                 </p>
               </div>
             )}
           </div>
 
-          <Button
-            onClick={toggleTemporizador}
-            className="w-full"
-            size="lg"
-            variant={temporizadorActivo ? "destructive" : "default"}
-            disabled={ticket.estado !== "activo"}
-          >
-            {temporizadorActivo ? (
-              <>
-                <Pause className="h-5 w-5 mr-2" />
-                Detener Temporizador
-              </>
-            ) : (
-              <>
-                <Play className="h-5 w-5 mr-2" />
-                Iniciar Temporizador
-              </>
-            )}
-          </Button>
+          {/* Botón temporizador */}
+          {ticket.estado === "activo" && (
+            <Button
+              onClick={toggleTemporizador}
+              className="w-full"
+              size="lg"
+              variant={temporizadorActivo ? "destructive" : "default"}
+            >
+              {temporizadorActivo ? (
+                <>
+                  <Pause className="h-5 w-5 mr-2" />
+                  Detener Temporizador
+                </>
+              ) : (
+                <>
+                  <Play className="h-5 w-5 mr-2" />
+                  Iniciar Temporizador
+                </>
+              )}
+            </Button>
+          )}
 
-          <div className="space-y-2 mt-6">
-            <h4 className="font-semibold text-sm">Historial</h4>
+          {/* Historial */}
+          <div className="space-y-3">
+            <h4 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Historial de Tiempo</h4>
             {historial.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4 text-sm">No hay registros de tiempo</p>
+              <div className="text-center py-8">
+                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-20" />
+                <p className="text-muted-foreground text-sm">No hay registros de tiempo</p>
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {historial.map((registro) => (
-                  <div key={registro.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm">
-                        {new Date(registro.inicio).toLocaleDateString()}{" "}
-                        {new Date(registro.inicio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}{" "}
-                        -
-                        {registro.fin
-                          ? ` ${new Date(registro.fin).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
-                          : " En progreso"}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
+                  <div key={registro.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm mb-1">
+                          {new Date(registro.inicio).toLocaleDateString("es-ES", { 
+                            day: "numeric", 
+                            month: "short",
+                            year: "numeric"
+                          })}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(registro.inicio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                          {" → "}
+                          {registro.fin
+                            ? new Date(registro.fin).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+                            : "En progreso"}
+                        </p>
                       </div>
+                      {registro.fin && (
+                        <Badge variant="outline" className="text-base font-semibold">
+                          {Math.floor((registro.duracion_minutos || 0) / 60)}h{" "}
+                          {(registro.duracion_minutos || 0) % 60}min
+                        </Badge>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground">Técnico: {registro.profiles.nombre}</p>
-                    {registro.notas && <p className="text-xs text-muted-foreground mt-1">Notas: {registro.notas}</p>}
-                    {registro.fin && (
-                      <p className="text-sm font-semibold text-primary mt-2">
-                        Duración: {Math.floor((registro.duracion_minutos || 0) / 60)}h{" "}
-                        {(registro.duracion_minutos || 0) % 60}min
-                      </p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Técnico: <span className="font-medium">{registro.profiles.nombre}</span>
+                    </p>
+                    {registro.notas && (
+                      <p className="text-sm bg-muted/50 p-2 rounded mt-2">{registro.notas}</p>
                     )}
                   </div>
                 ))}
