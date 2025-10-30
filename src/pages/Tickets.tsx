@@ -124,6 +124,28 @@ const Tickets = () => {
     );
   }
 
+  const recuperarTicket = async (ticketId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar que se navegue al detalle
+    
+    try {
+      const { error } = await supabase
+        .from("tickets")
+        .update({ 
+          estado: "activo",
+          motivo_eliminacion: null 
+        })
+        .eq("id", ticketId);
+
+      if (error) throw error;
+
+      toast.success("Ticket recuperado exitosamente");
+      loadTickets();
+    } catch (error) {
+      console.error("Error recuperando ticket:", error);
+      toast.error("Error al recuperar el ticket");
+    }
+  };
+
   const renderTicketCard = (ticket: Ticket) => (
     <Card
       key={ticket.id}
@@ -146,14 +168,27 @@ const Tickets = () => {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {Math.floor(ticket.tiempo_total_minutos / 60)}h {ticket.tiempo_total_minutos % 60}m
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {Math.floor(ticket.tiempo_total_minutos / 60)}h {ticket.tiempo_total_minutos % 60}m
+            </div>
+            <div>
+              {new Date(ticket.fecha_creacion).toLocaleDateString()}
+            </div>
           </div>
-          <div>
-            {new Date(ticket.fecha_creacion).toLocaleDateString()}
-          </div>
+          
+          {ticket.estado === "eliminado" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => recuperarTicket(ticket.id, e)}
+              className="h-7 px-2"
+            >
+              Recuperar
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
