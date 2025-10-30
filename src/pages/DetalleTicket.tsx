@@ -101,6 +101,12 @@ const DetalleTicket = () => {
   const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([]);
   const [etiquetasTicket, setEtiquetasTicket] = useState<Etiqueta[]>([]);
   const [dialogEtiquetasOpen, setDialogEtiquetasOpen] = useState(false);
+  const [dialogEditarOpen, setDialogEditarOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    titulo: "",
+    descripcion: "",
+    prioridad: "",
+  });
 
   useEffect(() => {
     if (id) {
@@ -133,6 +139,13 @@ const DetalleTicket = () => {
 
       if (error) throw error;
       setTicket(data);
+      
+      // Actualizar datos del formulario de edición
+      setEditFormData({
+        titulo: data.titulo,
+        descripcion: data.descripcion || "",
+        prioridad: data.prioridad,
+      });
     } catch (error) {
       console.error("Error cargando ticket:", error);
       toast.error("Error al cargar ticket");
@@ -276,6 +289,28 @@ const DetalleTicket = () => {
     } catch (error: any) {
       console.error("Error eliminando etiqueta:", error);
       toast.error(error.message || "Error al eliminar etiqueta");
+    }
+  };
+
+  const guardarEdicion = async () => {
+    try {
+      const { error } = await supabase
+        .from("tickets")
+        .update({
+          titulo: editFormData.titulo,
+          descripcion: editFormData.descripcion,
+          prioridad: editFormData.prioridad,
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Ticket actualizado correctamente");
+      setDialogEditarOpen(false);
+      loadTicket();
+    } catch (error: any) {
+      console.error("Error actualizando ticket:", error);
+      toast.error(error.message || "Error al actualizar el ticket");
     }
   };
 
@@ -612,9 +647,61 @@ const DetalleTicket = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Información del Ticket</span>
-              <Button variant="ghost" size="sm">
-                <Edit className="h-4 w-4" />
-              </Button>
+              <Dialog open={dialogEditarOpen} onOpenChange={setDialogEditarOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Editar Ticket</DialogTitle>
+                    <DialogDescription>Modifica la información del ticket</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label>Título</Label>
+                      <Input
+                        value={editFormData.titulo}
+                        onChange={(e) => setEditFormData({ ...editFormData, titulo: e.target.value })}
+                        placeholder="Título del ticket"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Descripción</Label>
+                      <Textarea
+                        value={editFormData.descripcion}
+                        onChange={(e) => setEditFormData({ ...editFormData, descripcion: e.target.value })}
+                        placeholder="Descripción del problema..."
+                        rows={4}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Prioridad</Label>
+                      <Select
+                        value={editFormData.prioridad}
+                        onValueChange={(value) => setEditFormData({ ...editFormData, prioridad: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="baja">Baja</SelectItem>
+                          <SelectItem value="media">Media</SelectItem>
+                          <SelectItem value="alta">Alta</SelectItem>
+                          <SelectItem value="urgente">Urgente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setDialogEditarOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={guardarEdicion}>Guardar Cambios</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -987,41 +1074,59 @@ const DetalleTicket = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {historial.map((registro) => (
-                  <div key={registro.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm mb-1">
-                          {new Date(registro.inicio).toLocaleDateString("es-ES", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                {(() => {
+                  let acumulado = 0;
+                  return historial.map((registro) => {
+                    if (registro.fin) {
+                      acumulado += registro.duracion_minutos || 0;
+                    }
+                    return (
+                      <div key={registro.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm mb-1">
+                              {new Date(registro.inicio).toLocaleDateString("es-ES", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(registro.inicio).toLocaleTimeString("es-ES", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                              {" → "}
+                              {registro.fin
+                                ? new Date(registro.fin).toLocaleTimeString("es-ES", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : "En progreso"}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            {registro.fin && (
+                              <>
+                                <Badge variant="outline" className="text-base font-semibold mb-1">
+                                  {Math.floor((registro.duracion_minutos || 0) / 60)}h{" "}
+                                  {(registro.duracion_minutos || 0) % 60}min
+                                </Badge>
+                                <p className="text-xs text-muted-foreground">
+                                  Acum: {Math.floor(acumulado / 60)}h {acumulado % 60}min
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Técnico: <span className="font-medium">{registro.profiles.nombre}</span>
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(registro.inicio).toLocaleTimeString("es-ES", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {" → "}
-                          {registro.fin
-                            ? new Date(registro.fin).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
-                            : "En progreso"}
-                        </p>
+                        {registro.notas && <p className="text-sm bg-muted/50 p-2 rounded mt-2">{registro.notas}</p>}
                       </div>
-                      {registro.fin && (
-                        <Badge variant="outline" className="text-base font-semibold">
-                          {Math.floor((registro.duracion_minutos || 0) / 60)}h {(registro.duracion_minutos || 0) % 60}
-                          min
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Técnico: <span className="font-medium">{registro.profiles.nombre}</span>
-                    </p>
-                    {registro.notas && <p className="text-sm bg-muted/50 p-2 rounded mt-2">{registro.notas}</p>}
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
               </div>
             )}
           </div>
