@@ -16,6 +16,11 @@ interface Etiqueta {
   color: string;
 }
 
+interface Tecnico {
+  nombre: string;
+  apellidos?: string;
+}
+
 interface Ticket {
   id: string;
   numero: number;
@@ -26,6 +31,7 @@ interface Ticket {
   tiempo_total_minutos: number;
   clientes: { nombre: string } | null;
   etiquetas?: Etiqueta[];
+  tecnicos_asignados?: Tecnico[];
 }
 
 const Tickets = () => {
@@ -76,9 +82,10 @@ const Tickets = () => {
 
       if (error) throw error;
 
-      // Cargar etiquetas para cada ticket
-      const ticketsConEtiquetas = await Promise.all(
+      // Cargar etiquetas y técnicos para cada ticket
+      const ticketsCompletos = await Promise.all(
         (ticketsData || []).map(async (ticket) => {
+          // Cargar etiquetas
           const { data: etiquetasData } = await supabase
             .from("tickets_etiquetas")
             .select(`
@@ -90,14 +97,26 @@ const Tickets = () => {
             `)
             .eq("ticket_id", ticket.id);
 
+          // Cargar técnicos asignados
+          const { data: tecnicosData } = await supabase
+            .from("tickets_tecnicos")
+            .select(`
+              profiles:tecnico_id (
+                nombre,
+                apellidos
+              )
+            `)
+            .eq("ticket_id", ticket.id);
+
           return {
             ...ticket,
             etiquetas: etiquetasData?.map((e: any) => e.etiquetas) || [],
+            tecnicos_asignados: tecnicosData?.map((t: any) => t.profiles) || [],
           };
         })
       );
 
-      setTickets(ticketsConEtiquetas);
+      setTickets(ticketsCompletos);
     } catch (error) {
       console.error("Error cargando tickets:", error);
       toast.error("Error al cargar tickets");
@@ -206,16 +225,26 @@ const Tickets = () => {
       <CardHeader className="pb-3">
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-sm font-semibold">
-              #{ticket.numero} - {ticket.titulo}
-            </CardTitle>
+            <div className="flex-1">
+              <CardTitle className="text-sm font-semibold mb-1">
+                #{ticket.numero} - {ticket.titulo}
+              </CardTitle>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>{ticket.clientes?.nombre || "Sin cliente"}</span>
+                {ticket.tecnicos_asignados && ticket.tecnicos_asignados.length > 0 && (
+                  <>
+                    <span>•</span>
+                    <span>
+                      {ticket.tecnicos_asignados.map(t => `${t.nombre} ${t.apellidos || ''}`).join(", ")}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
             <Badge variant={getPrioridadColor(ticket.prioridad)} className="text-xs">
               {ticket.prioridad}
             </Badge>
           </div>
-          <CardDescription className="text-xs">
-            {ticket.clientes?.nombre || "Sin cliente"}
-          </CardDescription>
           {ticket.etiquetas && ticket.etiquetas.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-1">
               {ticket.etiquetas.map((etiqueta) => (
