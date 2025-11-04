@@ -1216,6 +1216,26 @@ const DetalleCliente = () => {
                           placeholder="Provincia"
                         />
                       </div>
+                      {cliente.direccion && (
+                        <div className="md:col-span-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              window.open(
+                                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                  `${cliente.direccion}, ${cliente.codigo_postal || ""} ${cliente.poblacion || ""}, ${cliente.provincia || ""}`
+                                )}`,
+                                "_blank"
+                              );
+                            }}
+                          >
+                            <MapPin className="h-4 w-4 mr-2" />
+                            Ver en Google Maps
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1744,7 +1764,17 @@ const DetalleCliente = () => {
                     {cliente.direccion && (
                       <div className="space-y-1 col-span-2">
                         <Label className="text-muted-foreground">Dirección</Label>
-                        <p className="font-medium">{cliente.direccion}</p>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            `${cliente.direccion}, ${cliente.codigo_postal || ""} ${cliente.poblacion || ""}, ${cliente.provincia || ""}`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-primary hover:underline flex items-center gap-2"
+                        >
+                          <MapPin className="h-4 w-4" />
+                          {cliente.direccion}
+                        </a>
                       </div>
                     )}
                     {cliente.codigo_postal && (
