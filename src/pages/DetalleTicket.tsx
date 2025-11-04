@@ -349,6 +349,11 @@ const DetalleTicket = () => {
     }
   };
 
+  const abrirDialogoEditar = async () => {
+    await Promise.all([loadTecnicos(), loadTecnicosAsignados()]);
+    setDialogEditarOpen(true);
+  };
+
   const loadTecnicos = async () => {
     try {
       const { data, error } = await supabase
@@ -365,23 +370,30 @@ const DetalleTicket = () => {
   };
 
   const loadTecnicosAsignados = async () => {
+    if (!id) return;
     try {
       const { data, error } = await supabase
         .from("tickets_tecnicos")
-        .select(`
-          tecnico_id,
-          profiles:tecnico_id (
-            id,
-            nombre,
-            apellidos
-          )
-        `)
+        .select("tecnico_id")
         .eq("ticket_id", id);
 
       if (error) throw error;
       
-      setTecnicosAsignados(data?.map(t => t.tecnico_id) || []);
-      setTecnicosAsignadosInfo(data?.map(t => t.profiles) || []);
+      const tecnicoIds = data?.map(t => t.tecnico_id) || [];
+      setTecnicosAsignados(tecnicoIds);
+
+      // Cargar información de los técnicos
+      if (tecnicoIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, nombre, apellidos")
+          .in("id", tecnicoIds);
+
+        if (profilesError) throw profilesError;
+        setTecnicosAsignadosInfo(profilesData || []);
+      } else {
+        setTecnicosAsignadosInfo([]);
+      }
     } catch (error) {
       console.error("Error cargando técnicos asignados:", error);
     }
@@ -730,7 +742,7 @@ const DetalleTicket = () => {
               <span>Información del Ticket</span>
               <Dialog open={dialogEditarOpen} onOpenChange={setDialogEditarOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={() => loadTecnicosAsignados()}>
+                  <Button variant="ghost" size="sm" onClick={abrirDialogoEditar}>
                     <Edit className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
