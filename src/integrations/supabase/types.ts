@@ -412,8 +412,11 @@ export type Database = {
           activo: boolean
           c_inteligente: string | null
           cliente_id: string
+          contraseñas: string | null
           created_at: string
           fecha_instalacion: string | null
+          garantia_fin: string | null
+          garantia_inicio: string | null
           id: string
           impresora: string | null
           instalacion: string | null
@@ -421,6 +424,11 @@ export type Database = {
           modelo: string | null
           notas: string | null
           numero_serie: string | null
+          numero_serie_bdp: string | null
+          numero_serie_cashlogy: string | null
+          numero_serie_impresora: string | null
+          numero_serie_store_manager: string | null
+          numero_serie_wind: string | null
           pendrive_c_seg: string | null
           ram: string | null
           software: string | null
@@ -435,8 +443,11 @@ export type Database = {
           activo?: boolean
           c_inteligente?: string | null
           cliente_id: string
+          contraseñas?: string | null
           created_at?: string
           fecha_instalacion?: string | null
+          garantia_fin?: string | null
+          garantia_inicio?: string | null
           id?: string
           impresora?: string | null
           instalacion?: string | null
@@ -444,6 +455,11 @@ export type Database = {
           modelo?: string | null
           notas?: string | null
           numero_serie?: string | null
+          numero_serie_bdp?: string | null
+          numero_serie_cashlogy?: string | null
+          numero_serie_impresora?: string | null
+          numero_serie_store_manager?: string | null
+          numero_serie_wind?: string | null
           pendrive_c_seg?: string | null
           ram?: string | null
           software?: string | null
@@ -458,8 +474,11 @@ export type Database = {
           activo?: boolean
           c_inteligente?: string | null
           cliente_id?: string
+          contraseñas?: string | null
           created_at?: string
           fecha_instalacion?: string | null
+          garantia_fin?: string | null
+          garantia_inicio?: string | null
           id?: string
           impresora?: string | null
           instalacion?: string | null
@@ -467,6 +486,11 @@ export type Database = {
           modelo?: string | null
           notas?: string | null
           numero_serie?: string | null
+          numero_serie_bdp?: string | null
+          numero_serie_cashlogy?: string | null
+          numero_serie_impresora?: string | null
+          numero_serie_store_manager?: string | null
+          numero_serie_wind?: string | null
           pendrive_c_seg?: string | null
           ram?: string | null
           software?: string | null
@@ -696,6 +720,50 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidencias_equipos: {
+        Row: {
+          coste_reparacion: number | null
+          created_at: string
+          dentro_garantia: boolean | null
+          equipo_id: string
+          fecha: string
+          id: string
+          incidencia: string
+          solucion: string | null
+          updated_at: string
+        }
+        Insert: {
+          coste_reparacion?: number | null
+          created_at?: string
+          dentro_garantia?: boolean | null
+          equipo_id: string
+          fecha?: string
+          id?: string
+          incidencia: string
+          solucion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coste_reparacion?: number | null
+          created_at?: string
+          dentro_garantia?: boolean | null
+          equipo_id?: string
+          fecha?: string
+          id?: string
+          incidencia?: string
+          solucion?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incidencias_equipos_equipo_id_fkey"
+            columns: ["equipo_id"]
+            isOneToOne: false
+            referencedRelation: "equipos"
             referencedColumns: ["id"]
           },
         ]

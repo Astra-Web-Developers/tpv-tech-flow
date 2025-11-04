@@ -52,6 +52,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfigurableSelect } from "@/components/ConfigurableSelect";
 import { EtiquetasManager } from "@/components/EtiquetasManager";
+import { IncidenciasEquipo } from "@/components/IncidenciasEquipo";
 
 interface Cliente {
   id: string;
@@ -136,6 +137,12 @@ const DetalleCliente = () => {
     marca: "",
     modelo: "",
     numero_serie: "",
+    numero_serie_bdp: "",
+    numero_serie_wind: "",
+    numero_serie_store_manager: "",
+    numero_serie_cashlogy: "",
+    numero_serie_impresora: "",
+    contraseñas: "",
     tpv: "",
     wind: "",
     ram: "",
@@ -146,6 +153,8 @@ const DetalleCliente = () => {
     c_inteligente: "",
     instalacion: "",
     pendrive_c_seg: "",
+    garantia_inicio: "",
+    garantia_fin: "",
   });
   const [equipoConfigs, setEquipoConfigs] = useState<Record<string, string[]>>({});
   const [dialogInactivacionOpen, setDialogInactivacionOpen] = useState(false);
@@ -472,6 +481,12 @@ const DetalleCliente = () => {
         marca: "", 
         modelo: "", 
         numero_serie: "",
+        numero_serie_bdp: "",
+        numero_serie_wind: "",
+        numero_serie_store_manager: "",
+        numero_serie_cashlogy: "",
+        numero_serie_impresora: "",
+        contraseñas: "",
         tpv: "",
         wind: "",
         ram: "",
@@ -482,6 +497,8 @@ const DetalleCliente = () => {
         c_inteligente: "",
         instalacion: "",
         pendrive_c_seg: "",
+        garantia_inicio: "",
+        garantia_fin: "",
       });
       setDialogEquipoOpen(false);
       loadEquipos();
@@ -1903,7 +1920,7 @@ const DetalleCliente = () => {
                           Agregar Equipo
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-h-[80vh] overflow-y-auto">
+                      <DialogContent className="max-h-[80vh] overflow-y-auto max-w-3xl">
                         <DialogHeader>
                           <DialogTitle>Agregar Equipo</DialogTitle>
                           <DialogDescription>Registra un nuevo equipo del cliente</DialogDescription>
@@ -2005,6 +2022,64 @@ const DetalleCliente = () => {
                             />
                           </div>
 
+                          {/* Nuevos campos de números de serie */}
+                          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                            <h4 className="font-semibold text-sm">Números de Serie Específicos</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Nº Serie BDP</Label>
+                                <Input
+                                  value={nuevoEquipo.numero_serie_bdp}
+                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_bdp: e.target.value })}
+                                  placeholder="Número de serie BDP"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Nº Serie WIND</Label>
+                                <Input
+                                  value={nuevoEquipo.numero_serie_wind}
+                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_wind: e.target.value })}
+                                  placeholder="Número de serie WIND"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Nº Serie Store Manager</Label>
+                                <Input
+                                  value={nuevoEquipo.numero_serie_store_manager}
+                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_store_manager: e.target.value })}
+                                  placeholder="Número de serie Store Manager"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Nº Serie Cashlogy</Label>
+                                <Input
+                                  value={nuevoEquipo.numero_serie_cashlogy}
+                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_cashlogy: e.target.value })}
+                                  placeholder="Número de serie Cashlogy"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Nº Serie Impresora</Label>
+                                <Input
+                                  value={nuevoEquipo.numero_serie_impresora}
+                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_impresora: e.target.value })}
+                                  placeholder="Número de serie impresora"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Contraseñas */}
+                          <div className="space-y-2">
+                            <Label>Contraseñas</Label>
+                            <Textarea
+                              value={nuevoEquipo.contraseñas}
+                              onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, contraseñas: e.target.value })}
+                              placeholder="Contraseñas y accesos del equipo..."
+                              rows={3}
+                            />
+                          </div>
+
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label>TBAI</Label>
@@ -2046,6 +2121,29 @@ const DetalleCliente = () => {
                             </div>
                           </div>
 
+                          {/* Garantía */}
+                          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                            <h4 className="font-semibold text-sm">Garantía</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Fecha Inicio Garantía</Label>
+                                <Input
+                                  type="date"
+                                  value={nuevoEquipo.garantia_inicio}
+                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, garantia_inicio: e.target.value })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Fecha Fin Garantía</Label>
+                                <Input
+                                  type="date"
+                                  value={nuevoEquipo.garantia_fin}
+                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, garantia_fin: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
                           <Button onClick={agregarEquipo} className="w-full">
                             Agregar Equipo
                           </Button>
@@ -2056,33 +2154,68 @@ const DetalleCliente = () => {
                   {equipos.length === 0 ? (
                     <p className="text-muted-foreground text-center py-4">No hay equipos registrados</p>
                   ) : (
-                    <div className="space-y-3">
-                      {equipos.map((equipo: any) => (
-                        <div key={equipo.id} className="p-4 border rounded-lg">
-                          <div className="flex items-start justify-between">
-                            <div className="w-full">
-                              <p className="font-semibold text-lg mb-2">{equipo.tipo}</p>
-                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                {equipo.tpv && <p><span className="text-muted-foreground">TPV:</span> {equipo.tpv}</p>}
-                                {equipo.wind && <p><span className="text-muted-foreground">SO:</span> {equipo.wind}</p>}
-                                {equipo.ram && <p><span className="text-muted-foreground">RAM:</span> {equipo.ram}</p>}
-                                {equipo.impresora && <p><span className="text-muted-foreground">Impresora:</span> {equipo.impresora}</p>}
-                                {equipo.software && <p><span className="text-muted-foreground">Software:</span> {equipo.software}</p>}
-                                {equipo.v && <p><span className="text-muted-foreground">Versión:</span> {equipo.v}</p>}
-                                {equipo.marca && <p><span className="text-muted-foreground">Marca:</span> {equipo.marca}</p>}
-                                {equipo.modelo && <p><span className="text-muted-foreground">Modelo:</span> {equipo.modelo}</p>}
-                                {equipo.numero_serie && <p><span className="text-muted-foreground">S/N:</span> {equipo.numero_serie}</p>}
-                                {equipo.tbai && <p><span className="text-muted-foreground">TBAI:</span> {equipo.tbai}</p>}
-                                {equipo.c_inteligente && <p><span className="text-muted-foreground">Caja Inteligente:</span> {equipo.c_inteligente}</p>}
-                                {equipo.pendrive_c_seg && <p><span className="text-muted-foreground">Pendrive C.Seg:</span> {equipo.pendrive_c_seg}</p>}
-                                {equipo.instalacion && (
-                                  <p className="col-span-2"><span className="text-muted-foreground">Instalación:</span> {new Date(equipo.instalacion).toLocaleDateString()}</p>
+                    <div className="space-y-4">
+                      {equipos.map((equipo: any) => {
+                        // Calcular estado de garantía
+                        const garantiaInicio = equipo.garantia_inicio ? new Date(equipo.garantia_inicio) : null;
+                        const garantiaFin = equipo.garantia_fin ? new Date(equipo.garantia_fin) : null;
+                        const hoy = new Date();
+                        const garantiaVigente = garantiaInicio && garantiaFin && hoy >= garantiaInicio && hoy <= garantiaFin;
+                        const garantiaCaducada = garantiaFin && hoy > garantiaFin;
+
+                        return (
+                          <div key={equipo.id} className="p-4 border-2 rounded-lg bg-card">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <p className="font-semibold text-lg">{equipo.tipo}</p>
+                                {(garantiaInicio || garantiaFin) && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge
+                                      variant={garantiaVigente ? "default" : "destructive"}
+                                      className={garantiaVigente ? "bg-green-600" : "bg-red-600"}
+                                    >
+                                      {garantiaVigente ? "Garantía Vigente" : garantiaCaducada ? "Garantía Caducada" : "Garantía"}
+                                    </Badge>
+                                    {garantiaFin && (
+                                      <span className="text-xs text-muted-foreground">
+                                        hasta {new Date(garantiaFin).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </div>
+
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
+                              {equipo.tpv && <p><span className="text-muted-foreground">TPV:</span> {equipo.tpv}</p>}
+                              {equipo.wind && <p><span className="text-muted-foreground">SO:</span> {equipo.wind}</p>}
+                              {equipo.ram && <p><span className="text-muted-foreground">RAM:</span> {equipo.ram}</p>}
+                              {equipo.impresora && <p><span className="text-muted-foreground">Impresora:</span> {equipo.impresora}</p>}
+                              {equipo.software && <p><span className="text-muted-foreground">Software:</span> {equipo.software}</p>}
+                              {equipo.v && <p><span className="text-muted-foreground">Versión:</span> {equipo.v}</p>}
+                              {equipo.marca && <p><span className="text-muted-foreground">Marca:</span> {equipo.marca}</p>}
+                              {equipo.modelo && <p><span className="text-muted-foreground">Modelo:</span> {equipo.modelo}</p>}
+                              {equipo.numero_serie && <p><span className="text-muted-foreground">S/N:</span> {equipo.numero_serie}</p>}
+                              {equipo.numero_serie_bdp && <p><span className="text-muted-foreground">S/N BDP:</span> {equipo.numero_serie_bdp}</p>}
+                              {equipo.numero_serie_wind && <p><span className="text-muted-foreground">S/N WIND:</span> {equipo.numero_serie_wind}</p>}
+                              {equipo.numero_serie_store_manager && <p><span className="text-muted-foreground">S/N Store Manager:</span> {equipo.numero_serie_store_manager}</p>}
+                              {equipo.numero_serie_cashlogy && <p><span className="text-muted-foreground">S/N Cashlogy:</span> {equipo.numero_serie_cashlogy}</p>}
+                              {equipo.numero_serie_impresora && <p><span className="text-muted-foreground">S/N Impresora:</span> {equipo.numero_serie_impresora}</p>}
+                              {equipo.tbai && <p><span className="text-muted-foreground">TBAI:</span> {equipo.tbai}</p>}
+                              {equipo.c_inteligente && <p><span className="text-muted-foreground">Caja Inteligente:</span> {equipo.c_inteligente}</p>}
+                              {equipo.pendrive_c_seg && <p><span className="text-muted-foreground">Pendrive C.Seg:</span> {equipo.pendrive_c_seg}</p>}
+                              {equipo.instalacion && (
+                                <p className="col-span-2"><span className="text-muted-foreground">Instalación:</span> {new Date(equipo.instalacion).toLocaleDateString()}</p>
+                              )}
+                              {equipo.contraseñas && (
+                                <p className="col-span-2"><span className="text-muted-foreground">Contraseñas:</span> <span className="whitespace-pre-wrap">{equipo.contraseñas}</span></p>
+                              )}
+                            </div>
+
+                            <IncidenciasEquipo equipoId={equipo.id} />
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
