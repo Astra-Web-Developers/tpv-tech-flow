@@ -103,6 +103,8 @@ export type Database = {
       clientes: {
         Row: {
           activo: boolean
+          aviso_cobrar_antes: string | null
+          aviso_moroso: boolean | null
           cif: string | null
           codigo_postal: string | null
           created_at: string
@@ -139,6 +141,8 @@ export type Database = {
         }
         Insert: {
           activo?: boolean
+          aviso_cobrar_antes?: string | null
+          aviso_moroso?: boolean | null
           cif?: string | null
           codigo_postal?: string | null
           created_at?: string
@@ -175,6 +179,8 @@ export type Database = {
         }
         Update: {
           activo?: boolean
+          aviso_cobrar_antes?: string | null
+          aviso_moroso?: boolean | null
           cif?: string | null
           codigo_postal?: string | null
           created_at?: string

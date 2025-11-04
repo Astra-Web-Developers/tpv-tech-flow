@@ -83,6 +83,8 @@ interface Cliente {
   fecha_alta_contrato: string | null;
   fecha_caducidad_contrato: string | null;
   motivo_inactivacion: string | null;
+  aviso_moroso: boolean;
+  aviso_cobrar_antes: string | null;
 }
 
 interface Equipo {
@@ -146,6 +148,14 @@ const DetalleCliente = () => {
   const [equipoConfigs, setEquipoConfigs] = useState<Record<string, string[]>>({});
   const [dialogInactivacionOpen, setDialogInactivacionOpen] = useState(false);
   const [motivoInactivacion, setMotivoInactivacion] = useState("");
+  const [dialogContratoOpen, setDialogContratoOpen] = useState(false);
+  const [contratoEditando, setContratoEditando] = useState<Contrato | null>(null);
+  const [nuevoContrato, setNuevoContrato] = useState({
+    tipo: "",
+    fecha_alta: "",
+    fecha_caducidad: "",
+    notas: "",
+  });
 
   useEffect(() => {
     if (id) {
@@ -495,6 +505,89 @@ const DetalleCliente = () => {
       console.error("Error archivando cliente:", error);
       toast.error(error.message || "Error al archivar cliente");
     }
+  };
+
+  const guardarContrato = async () => {
+    if (!nuevoContrato.tipo || !nuevoContrato.fecha_alta || !nuevoContrato.fecha_caducidad) {
+      toast.error("Completa todos los campos obligatorios");
+      return;
+    }
+
+    try {
+      if (contratoEditando) {
+        // Actualizar contrato existente
+        const { error } = await supabase
+          .from("contratos_mantenimiento")
+          .update({
+            tipo: nuevoContrato.tipo,
+            fecha_alta: nuevoContrato.fecha_alta,
+            fecha_caducidad: nuevoContrato.fecha_caducidad,
+            notas: nuevoContrato.notas,
+          })
+          .eq("id", contratoEditando.id);
+
+        if (error) throw error;
+        toast.success("Contrato actualizado");
+      } else {
+        // Crear nuevo contrato
+        const { error } = await supabase.from("contratos_mantenimiento").insert([
+          {
+            cliente_id: id,
+            tipo: nuevoContrato.tipo,
+            fecha_alta: nuevoContrato.fecha_alta,
+            fecha_caducidad: nuevoContrato.fecha_caducidad,
+            notas: nuevoContrato.notas,
+            activo: true,
+          },
+        ]);
+
+        if (error) throw error;
+        toast.success("Contrato agregado");
+      }
+
+      setNuevoContrato({ tipo: "", fecha_alta: "", fecha_caducidad: "", notas: "" });
+      setContratoEditando(null);
+      setDialogContratoOpen(false);
+      loadContratos();
+    } catch (error: any) {
+      console.error("Error guardando contrato:", error);
+      toast.error(error.message || "Error al guardar contrato");
+    }
+  };
+
+  const editarContrato = (contrato: Contrato) => {
+    setContratoEditando(contrato);
+    setNuevoContrato({
+      tipo: contrato.tipo,
+      fecha_alta: contrato.fecha_alta,
+      fecha_caducidad: contrato.fecha_caducidad,
+      notas: contrato.notas || "",
+    });
+    setDialogContratoOpen(true);
+  };
+
+  const eliminarContrato = async (contratoId: string) => {
+    if (!confirm("¿Estás seguro de eliminar este contrato?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("contratos_mantenimiento")
+        .update({ activo: false })
+        .eq("id", contratoId);
+
+      if (error) throw error;
+      toast.success("Contrato eliminado");
+      loadContratos();
+    } catch (error: any) {
+      console.error("Error eliminando contrato:", error);
+      toast.error(error.message || "Error al eliminar contrato");
+    }
+  };
+
+  const abrirDialogoNuevoContrato = () => {
+    setContratoEditando(null);
+    setNuevoContrato({ tipo: "", fecha_alta: "", fecha_caducidad: "", notas: "" });
+    setDialogContratoOpen(true);
   };
 
   if (loading) {
@@ -1335,69 +1428,191 @@ const DetalleCliente = () => {
               </TabsContent>
 
               <TabsContent value="contrato" className="space-y-6 mt-6">
-                <Card className="border-2">
+                {/* Avisos */}
+                <Card className="border-2 border-red-500/50 bg-red-50">
                   <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <ScrollText className="h-4 w-4" />
-                      Contrato de Mantenimiento
+                    <CardTitle className="text-base flex items-center gap-2 text-red-700">
+                      <AlertTriangle className="h-4 w-4" />
+                      Avisos Importantes
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-2">
                       <Checkbox
-                        id="tiene_contrato_mantenimiento"
-                        checked={cliente.tiene_contrato_mantenimiento}
+                        id="aviso_moroso"
+                        checked={cliente.aviso_moroso}
                         onCheckedChange={(checked) =>
-                          setCliente({ ...cliente, tiene_contrato_mantenimiento: checked as boolean })
+                          setCliente({ ...cliente, aviso_moroso: checked as boolean })
                         }
                       />
-                      <Label htmlFor="tiene_contrato_mantenimiento" className="cursor-pointer font-medium">
-                        Tiene Contrato de Mantenimiento
+                      <Label htmlFor="aviso_moroso" className="cursor-pointer font-medium text-red-700">
+                        Cliente Moroso
                       </Label>
                     </div>
+                    <div className="space-y-2">
+                      <Label className="text-red-700">Avisos Adicionales (ej: Cobrar antes de trabajar)</Label>
+                      <Textarea
+                        value={cliente.aviso_cobrar_antes || ""}
+                        onChange={(e) => setCliente({ ...cliente, aviso_cobrar_antes: e.target.value })}
+                        rows={2}
+                        placeholder="Cobrar antes de trabajar, requiere autorización, etc..."
+                        className="bg-white border-red-300"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
-                    {cliente.tiene_contrato_mantenimiento && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6 border-2 border-primary/20 rounded-lg bg-primary/5">
-                        <div className="space-y-2">
-                          <Label>Tipo de Contrato</Label>
-                          <Select
-                            value={cliente.tipo_contrato || ""}
-                            onValueChange={(value) => setCliente({ ...cliente, tipo_contrato: value })}
-                          >
-                            <SelectTrigger className="bg-background">
-                              <SelectValue placeholder="Seleccionar..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="trimestral">Trimestral</SelectItem>
-                              <SelectItem value="semestral">Semestral</SelectItem>
-                              <SelectItem value="anual">Anual</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3" />
-                            Fecha de Alta
-                          </Label>
-                          <Input
-                            type="date"
-                            value={cliente.fecha_alta_contrato || ""}
-                            onChange={(e) => setCliente({ ...cliente, fecha_alta_contrato: e.target.value })}
-                            className="bg-background"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            <Calendar className="h-3 w-3" />
-                            Fecha de Caducidad
-                          </Label>
-                          <Input
-                            type="date"
-                            value={cliente.fecha_caducidad_contrato || ""}
-                            onChange={(e) => setCliente({ ...cliente, fecha_caducidad_contrato: e.target.value })}
-                            className="bg-background"
-                          />
-                        </div>
+                {/* Contratos de Mantenimiento */}
+                <Card className="border-2">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <ScrollText className="h-4 w-4" />
+                        Contratos de Mantenimiento
+                      </CardTitle>
+                      <Dialog open={dialogContratoOpen} onOpenChange={setDialogContratoOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" onClick={abrirDialogoNuevoContrato}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Nuevo Contrato
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>
+                              {contratoEditando ? "Editar Contrato" : "Nuevo Contrato de Mantenimiento"}
+                            </DialogTitle>
+                            <DialogDescription>
+                              Completa la información del contrato
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Tipo de Contrato*</Label>
+                              <Select
+                                value={nuevoContrato.tipo}
+                                onValueChange={(value) => setNuevoContrato({ ...nuevoContrato, tipo: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="trimestral">Trimestral</SelectItem>
+                                  <SelectItem value="semestral">Semestral</SelectItem>
+                                  <SelectItem value="anual">Anual</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Fecha de Alta*</Label>
+                                <Input
+                                  type="date"
+                                  value={nuevoContrato.fecha_alta}
+                                  onChange={(e) =>
+                                    setNuevoContrato({ ...nuevoContrato, fecha_alta: e.target.value })
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Fecha de Caducidad*</Label>
+                                <Input
+                                  type="date"
+                                  value={nuevoContrato.fecha_caducidad}
+                                  onChange={(e) =>
+                                    setNuevoContrato({ ...nuevoContrato, fecha_caducidad: e.target.value })
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Notas</Label>
+                              <Textarea
+                                value={nuevoContrato.notas}
+                                onChange={(e) => setNuevoContrato({ ...nuevoContrato, notas: e.target.value })}
+                                rows={3}
+                                placeholder="Notas adicionales..."
+                              />
+                            </div>
+                            <Button onClick={guardarContrato} className="w-full">
+                              {contratoEditando ? "Actualizar Contrato" : "Crear Contrato"}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {contratos.filter(c => c.activo).length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">No hay contratos activos</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {contratos
+                          .filter(c => c.activo)
+                          .map((contrato) => {
+                            const fechaCaducidad = new Date(contrato.fecha_caducidad);
+                            const hoy = new Date();
+                            const estaExpirado = fechaCaducidad < hoy;
+
+                            return (
+                              <div
+                                key={contrato.id}
+                                className={`p-4 border-2 rounded-lg ${
+                                  estaExpirado ? "border-red-300 bg-red-50" : "border-primary/20 bg-primary/5"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <p className={`font-semibold capitalize ${estaExpirado ? "text-red-700" : ""}`}>
+                                      Contrato {contrato.tipo}
+                                    </p>
+                                    {estaExpirado && (
+                                      <Badge variant="destructive" className="mt-1">
+                                        <AlertTriangle className="h-3 w-3 mr-1" />
+                                        Expirado
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => editarContrato(contrato)}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => eliminarContrato(contrato.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-red-600" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div>
+                                    <Label className="text-muted-foreground text-xs">Fecha de Alta</Label>
+                                    <p className="font-medium">
+                                      {new Date(contrato.fecha_alta).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-muted-foreground text-xs">Fecha de Caducidad</Label>
+                                    <p className={`font-medium ${estaExpirado ? "text-red-700" : ""}`}>
+                                      {new Date(contrato.fecha_caducidad).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  {contrato.notas && (
+                                    <div className="col-span-2">
+                                      <Label className="text-muted-foreground text-xs">Notas</Label>
+                                      <p className="text-sm">{contrato.notas}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                       </div>
                     )}
                   </CardContent>
@@ -1846,61 +2061,88 @@ const DetalleCliente = () => {
               </TabsContent>
 
               <TabsContent value="contrato" className="space-y-6 mt-6">
+                {/* Avisos */}
+                {(cliente.aviso_moroso || cliente.aviso_cobrar_antes) && (
+                  <Card className="border-2 border-red-500 bg-red-50">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2 text-red-700">
+                        <AlertTriangle className="h-4 w-4" />
+                        Avisos Importantes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {cliente.aviso_moroso && (
+                        <div className="flex items-center gap-2 p-3 bg-red-100 text-red-800 rounded font-semibold">
+                          <AlertTriangle className="h-5 w-5" />
+                          <span>CLIENTE MOROSO</span>
+                        </div>
+                      )}
+                      {cliente.aviso_cobrar_antes && (
+                        <div className="p-3 bg-red-100 text-red-800 rounded">
+                          <p className="font-semibold whitespace-pre-wrap">{cliente.aviso_cobrar_antes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Contratos de Mantenimiento */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Contrato de Mantenimiento</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Badge variant={cliente.tiene_contrato_mantenimiento ? "default" : "secondary"}>
-                        {cliente.tiene_contrato_mantenimiento ? "Tiene Contrato" : "Sin Contrato"}
-                      </Badge>
+                  <h3 className="text-lg font-semibold">Contratos de Mantenimiento</h3>
+                  {contratos.filter(c => c.activo).length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">No hay contratos activos</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {contratos
+                        .filter(c => c.activo)
+                        .map((contrato) => {
+                          const fechaCaducidad = new Date(contrato.fecha_caducidad);
+                          const hoy = new Date();
+                          const estaExpirado = fechaCaducidad < hoy;
+
+                          return (
+                            <div
+                              key={contrato.id}
+                              className={`p-4 border-2 rounded-lg ${
+                                estaExpirado ? "border-red-300 bg-red-50" : "border-primary/20 bg-primary/5"
+                              }`}
+                            >
+                              <div className="mb-3">
+                                <p className={`font-semibold capitalize text-lg ${estaExpirado ? "text-red-700" : ""}`}>
+                                  Contrato {contrato.tipo}
+                                </p>
+                                {estaExpirado && (
+                                  <Badge variant="destructive" className="mt-1">
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    Expirado
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-muted-foreground text-xs">Fecha de Alta</Label>
+                                  <p className="font-medium">
+                                    {new Date(contrato.fecha_alta).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-muted-foreground text-xs">Fecha de Caducidad</Label>
+                                  <p className={`font-medium ${estaExpirado ? "text-red-700" : ""}`}>
+                                    {new Date(contrato.fecha_caducidad).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                {contrato.notas && (
+                                  <div className="col-span-2 space-y-1">
+                                    <Label className="text-muted-foreground text-xs">Notas</Label>
+                                    <p className="text-sm">{contrato.notas}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                     </div>
-
-                    {cliente.tiene_contrato_mantenimiento &&
-                      (() => {
-                        const fechaCaducidad = cliente.fecha_caducidad_contrato
-                          ? new Date(cliente.fecha_caducidad_contrato)
-                          : null;
-                        const hoy = new Date();
-                        const estaExpirado = fechaCaducidad ? fechaCaducidad < hoy : false;
-
-                        return (
-                          <div
-                            className={`grid grid-cols-3 gap-4 p-4 border rounded-lg ${estaExpirado ? "border-red-300 bg-red-50" : ""}`}
-                          >
-                            {cliente.tipo_contrato && (
-                              <div className="space-y-1">
-                                <Label className="text-muted-foreground">Tipo de Contrato</Label>
-                                <p className={`font-medium capitalize ${estaExpirado ? "text-red-600" : ""}`}>
-                                  {cliente.tipo_contrato}
-                                </p>
-                              </div>
-                            )}
-                            {cliente.fecha_alta_contrato && (
-                              <div className="space-y-1">
-                                <Label className="text-muted-foreground">Fecha de Alta</Label>
-                                <p className="font-medium">
-                                  {new Date(cliente.fecha_alta_contrato).toLocaleDateString()}
-                                </p>
-                              </div>
-                            )}
-                            {cliente.fecha_caducidad_contrato && (
-                              <div className="space-y-1">
-                                <Label className="text-muted-foreground">Fecha de Caducidad</Label>
-                                <p className={`font-medium ${estaExpirado ? "text-red-600" : ""}`}>
-                                  {new Date(cliente.fecha_caducidad_contrato).toLocaleDateString()}
-                                </p>
-                              </div>
-                            )}
-                            {estaExpirado && (
-                              <div className="col-span-3 flex items-center gap-2 px-3 py-2 bg-red-100 text-red-800 rounded">
-                                <AlertTriangle className="h-4 w-4" />
-                                <span className="text-sm font-medium">Contrato expirado</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-                  </div>
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
