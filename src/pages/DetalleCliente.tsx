@@ -37,6 +37,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Dialog,
   DialogContent,
@@ -292,26 +294,63 @@ const DetalleCliente = () => {
   };
 
   const exportarHistorial = async () => {
-    const csv = [
-      ["Número", "Título", "Estado", "Fecha Creación"],
-      ...historialCompleto.map((t) => [t.numero, t.titulo, t.estado, new Date(t.fecha_creacion).toLocaleDateString()]),
-    ]
-      .map((row) => row.join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `historial-tickets-${cliente?.nombre || "cliente"}.csv`;
-    a.click();
-
-    // Registrar exportación en auditoría
-    if (id) {
-      await logExport("tickets", `Exportación de historial completo de tickets del cliente ${cliente?.nombre}`);
+    try {
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(16);
+      doc.text(`Historial de Tickets - ${cliente?.nombre || "Cliente"}`, 14, 15);
+      
+      // Fecha del reporte
+      doc.setFontSize(10);
+      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 22);
+      
+      // Preparar datos para la tabla
+      const tableData = historialCompleto.map((t) => [
+        `#${t.numero}`,
+        t.titulo,
+        t.estado === 'activo' ? 'Activo' : 'Finalizado',
+        new Date(t.fecha_creacion).toLocaleDateString(),
+      ]);
+      
+      // Crear tabla
+      autoTable(doc, {
+        startY: 28,
+        head: [["Número", "Título", "Estado", "Fecha Creación"]],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185] },
+        styles: { fontSize: 10 },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 70 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 40 },
+        },
+      });
+      
+      // Resumen al final
+      const finalY = (doc as any).lastAutoTable.finalY || 28;
+      doc.setFontSize(12);
+      doc.text("Resumen", 14, finalY + 10);
+      doc.setFontSize(10);
+      doc.text(`Total de tickets: ${historialCompleto.length}`, 14, finalY + 17);
+      doc.text(`Tickets abiertos: ${ticketsAbiertos.length}`, 14, finalY + 24);
+      doc.text(`Tickets finalizados: ${historialCompleto.filter((t) => t.estado === "finalizado").length}`, 14, finalY + 31);
+      
+      // Guardar PDF
+      doc.save(`historial-tickets-${cliente?.nombre || "cliente"}.pdf`);
+      
+      // Registrar exportación en auditoría
+      if (id) {
+        await logExport("tickets", `Exportación PDF de historial completo de tickets del cliente ${cliente?.nombre}`);
+      }
+      
+      toast.success("Historial exportado en PDF");
+    } catch (error) {
+      console.error("Error exportando PDF:", error);
+      toast.error("Error al exportar el historial");
     }
-
-    toast.success("Historial exportado");
   };
 
   const enviarHistorialEmail = async () => {
@@ -2191,7 +2230,7 @@ const DetalleCliente = () => {
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={exportarHistorial}>
                 <FileDown className="h-4 w-4 mr-2" />
-                Exportar CSV
+                Exportar PDF
               </Button>
               <Button size="sm" variant="outline" onClick={enviarHistorialEmail}>
                 <Send className="h-4 w-4 mr-2" />
