@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Phone, Mail, Upload, X, Image as ImageIcon, AlertTriangle, FileX, Tag } from "lucide-react";
+import { Plus, Search, Phone, Mail, Upload, X, Image as ImageIcon, AlertTriangle, FileX, Tag, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -30,6 +32,7 @@ interface Etiqueta {
 
 interface ClienteConEtiquetas extends Cliente {
   etiquetas?: Etiqueta[];
+  tipo_contrato?: string | null;
 }
 
 interface Cliente {
@@ -119,7 +122,7 @@ const Clientes = () => {
 
       if (error) throw error;
 
-      // Cargar etiquetas para cada cliente
+      // Cargar etiquetas y contratos para cada cliente
       const clientesConEtiquetas = await Promise.all(
         (data || []).map(async (cliente) => {
           const { data: etiquetasData } = await supabase
@@ -128,7 +131,20 @@ const Clientes = () => {
             .eq("cliente_id", cliente.id);
 
           const etiquetas = etiquetasData?.map((item: any) => item.etiquetas).filter(Boolean) || [];
-          return { ...cliente, etiquetas };
+          
+          // Cargar contrato activo
+          const { data: contratoData } = await supabase
+            .from("contratos_mantenimiento")
+            .select("tipo")
+            .eq("cliente_id", cliente.id)
+            .eq("activo", true)
+            .maybeSingle();
+
+          return { 
+            ...cliente, 
+            etiquetas,
+            tipo_contrato: contratoData?.tipo || null
+          };
         })
       );
 
@@ -289,6 +305,59 @@ const Clientes = () => {
     }
   };
 
+  const exportarPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(16);
+      doc.text("Listado de Clientes", 14, 15);
+      
+      // Fecha del reporte
+      doc.setFontSize(10);
+      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 22);
+      doc.text(`Total de clientes: ${filteredClientes.length}`, 14, 28);
+      
+      // Preparar datos para la tabla
+      const tableData = filteredClientes.map((cliente) => [
+        cliente.nombre,
+        cliente.cif || "-",
+        cliente.telefono || "-",
+        cliente.poblacion || "-",
+        cliente.provincia || "-",
+        cliente.selector_fiscal || "-",
+        cliente.tipo_contrato || "-",
+      ]);
+      
+      // Crear tabla
+      autoTable(doc, {
+        startY: 34,
+        head: [["Nombre", "CIF", "Teléfono", "Ciudad", "Provincia", "Módulo Fiscal", "Tipo Contrato"]],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185] },
+        styles: { fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 40 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 25 },
+          4: { cellWidth: 25 },
+          5: { cellWidth: 25 },
+          6: { cellWidth: 30 },
+        },
+      });
+      
+      // Guardar PDF
+      doc.save(`listado-clientes-${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast.success("Listado exportado en PDF");
+    } catch (error) {
+      console.error("Error exportando PDF:", error);
+      toast.error("Error al exportar el listado");
+    }
+  };
+
   const filteredClientes = clientes.filter((cliente) => {
     // Filtro por estado activo/inactivo
     if (mostrarInactivos) {
@@ -303,11 +372,16 @@ const Clientes = () => {
       }
     }
 
-    // Filtro por búsqueda de texto
+    // Filtro por búsqueda de texto (expandido)
+    const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
-      cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cliente.cif?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cliente.telefono?.includes(searchTerm);
+      cliente.nombre.toLowerCase().includes(searchLower) ||
+      cliente.cif?.toLowerCase().includes(searchLower) ||
+      cliente.telefono?.includes(searchTerm) ||
+      cliente.poblacion?.toLowerCase().includes(searchLower) ||
+      cliente.provincia?.toLowerCase().includes(searchLower) ||
+      cliente.selector_fiscal?.toLowerCase().includes(searchLower) ||
+      cliente.tipo_contrato?.toLowerCase().includes(searchLower);
 
     // Filtro por etiquetas seleccionadas
     const matchesEtiquetas =
@@ -337,10 +411,16 @@ const Clientes = () => {
           <h1 className="text-3xl font-bold">Clientes</h1>
           <p className="text-muted-foreground">Gestiona la base de datos de clientes</p>
         </div>
-        <Button onClick={() => navigate("/clientes/nuevo")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Cliente
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportarPDF} disabled={filteredClientes.length === 0}>
+            <FileDown className="h-4 w-4 mr-2" />
+            Exportar PDF
+          </Button>
+          <Button onClick={() => navigate("/clientes/nuevo")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Cliente
+          </Button>
+        </div>
       </div>
 
       {/* Mantener el diálogo para uso futuro si es necesario, pero oculto */}
@@ -840,7 +920,7 @@ const Clientes = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nombre, CIF o teléfono..."
+              placeholder="Buscar por nombre, CIF, teléfono, ciudad, provincia, módulo fiscal o tipo de contrato..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
