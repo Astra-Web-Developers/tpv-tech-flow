@@ -35,6 +35,7 @@ import {
   StickyNote,
   ScrollText,
   Trash2,
+  Download,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import jsPDF from "jspdf";
@@ -305,15 +306,15 @@ const DetalleCliente = () => {
   const exportarHistorial = async () => {
     try {
       const doc = new jsPDF();
-      
+
       // Título
       doc.setFontSize(16);
       doc.text(`Historial de Tickets - ${cliente?.nombre || "Cliente"}`, 14, 15);
-      
+
       // Fecha del reporte
       doc.setFontSize(10);
       doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 22);
-      
+
       // Preparar datos para la tabla
       const tableData = historialCompleto.map((t) => [
         `#${t.numero}`,
@@ -321,7 +322,7 @@ const DetalleCliente = () => {
         t.estado === 'activo' ? 'Activo' : 'Finalizado',
         new Date(t.fecha_creacion).toLocaleDateString(),
       ]);
-      
+
       // Crear tabla
       autoTable(doc, {
         startY: 28,
@@ -337,7 +338,7 @@ const DetalleCliente = () => {
           3: { cellWidth: 40 },
         },
       });
-      
+
       // Resumen al final
       const finalY = (doc as any).lastAutoTable.finalY || 28;
       doc.setFontSize(12);
@@ -346,15 +347,45 @@ const DetalleCliente = () => {
       doc.text(`Total de tickets: ${historialCompleto.length}`, 14, finalY + 17);
       doc.text(`Tickets abiertos: ${ticketsAbiertos.length}`, 14, finalY + 24);
       doc.text(`Tickets finalizados: ${historialCompleto.filter((t) => t.estado === "finalizado").length}`, 14, finalY + 31);
-      
+
+      // Agregar logo en la parte inferior derecha
+      try {
+        const response = await fetch('/logo.png');
+        const blob = await response.blob();
+        const reader = new FileReader();
+
+        await new Promise((resolve, reject) => {
+          reader.onloadend = () => {
+            const base64data = reader.result as string;
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const logoWidth = 30;
+            const logoHeight = 15;
+            const margin = 10;
+
+            // Posicionar en la parte inferior derecha
+            const x = pageWidth - logoWidth - margin;
+            const y = pageHeight - logoHeight - margin;
+
+            doc.addImage(base64data, 'PNG', x, y, logoWidth, logoHeight);
+            resolve(null);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (logoError) {
+        console.error("Error cargando logo:", logoError);
+        // Continuar sin logo si hay error
+      }
+
       // Guardar PDF
       doc.save(`historial-tickets-${cliente?.nombre || "cliente"}.pdf`);
-      
+
       // Registrar exportación en auditoría
       if (id) {
         await logExport("tickets", `Exportación PDF de historial completo de tickets del cliente ${cliente?.nombre}`);
       }
-      
+
       toast.success("Historial exportado en PDF");
     } catch (error) {
       console.error("Error exportando PDF:", error);
@@ -365,6 +396,26 @@ const DetalleCliente = () => {
   const enviarHistorialEmail = async () => {
     // Aquí implementarías el envío por email
     toast.info("Función de envío por email próximamente");
+  };
+
+  const descargarLogo = async (logoUrl: string, nombreCliente: string) => {
+    try {
+      const response = await fetch(logoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const extension = logoUrl.split('.').pop()?.split('?')[0] || 'png';
+      a.download = `logo-${nombreCliente.toLowerCase().replace(/\s+/g, '-')}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success("Logo descargado");
+    } catch (error) {
+      console.error("Error descargando logo:", error);
+      toast.error("Error al descargar el logo");
+    }
   };
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -690,26 +741,42 @@ const DetalleCliente = () => {
         </Card>
       )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate("/clientes")}>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <Button variant="outline" size="icon" onClick={() => navigate("/clientes")} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           {cliente.logo_url && (
-            <div className="w-16 h-16 rounded-lg border-2 border-border overflow-hidden flex items-center justify-center bg-background">
-              <img
-                src={cliente.logo_url}
-                alt={`Logo ${cliente.nombre}`}
-                className="w-full h-full object-contain p-1"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
+            <div className="relative group/logo">
+              <div className="w-20 h-20 rounded-xl border-2 border-border overflow-hidden flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/50 shadow-sm transition-all duration-300 group-hover/logo:shadow-md group-hover/logo:border-primary/50">
+                <img
+                  src={cliente.logo_url}
+                  alt={`Logo ${cliente.nombre}`}
+                  className="w-full h-full object-contain p-2"
+                  onError={(e) => {
+                    e.currentTarget.parentElement!.style.display = "none";
+                  }}
+                />
+              </div>
+              <Button
+                size="icon"
+                variant="secondary"
+                className="absolute -bottom-2 -right-2 h-7 w-7 opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300 shadow-lg"
+                onClick={() => descargarLogo(cliente.logo_url!, cliente.nombre)}
+                title="Descargar logo"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </Button>
             </div>
           )}
-          <div>
-            <h1 className="text-3xl font-bold">{cliente.nombre}</h1>
-            {cliente.cif && <p className="text-muted-foreground">CIF: {cliente.cif}</p>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-bold truncate">{cliente.nombre}</h1>
+            {cliente.cif && <p className="text-muted-foreground font-mono">CIF: {cliente.cif}</p>}
+            {!cliente.activo && (
+              <Badge variant="secondary" className="mt-1">
+                Cliente Archivado
+              </Badge>
+            )}
           </div>
         </div>
         {editMode ? (
@@ -1715,18 +1782,34 @@ const DetalleCliente = () => {
 
               <TabsContent value="empresa" className="space-y-4 mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Datos de la Empresa</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    Datos de la Empresa
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {cliente.logo_url && (
                       <div className="col-span-2 flex justify-center">
-                        <img
-                          src={cliente.logo_url}
-                          alt={`Logo ${cliente.nombre}`}
-                          className="max-h-32 object-contain rounded border p-2"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
+                        <div className="relative group/logo-view">
+                          <div className="bg-gradient-to-br from-muted/30 to-muted/50 rounded-xl border-2 border-border p-4 transition-all duration-300 group-hover/logo-view:shadow-lg group-hover/logo-view:border-primary/50">
+                            <img
+                              src={cliente.logo_url}
+                              alt={`Logo ${cliente.nombre}`}
+                              className="max-h-32 object-contain"
+                              onError={(e) => {
+                                e.currentTarget.parentElement!.style.display = "none";
+                              }}
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/logo-view:opacity-100 transition-opacity duration-300 shadow-lg gap-2"
+                            onClick={() => descargarLogo(cliente.logo_url!, cliente.nombre)}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            Descargar Logo
+                          </Button>
+                        </div>
                       </div>
                     )}
                     <div className="space-y-1">
@@ -1763,7 +1846,10 @@ const DetalleCliente = () => {
 
               <TabsContent value="contactos" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Personas de Contacto</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    Personas de Contacto
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {cliente.persona_contacto && (
                       <div className="space-y-1 col-span-2">
@@ -1792,7 +1878,10 @@ const DetalleCliente = () => {
 
                 {(cliente.nombre_encargado || cliente.telefono_encargado) && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Encargado</h3>
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                      Encargado
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       {cliente.nombre_encargado && (
                         <div className="space-y-1">
@@ -1815,7 +1904,10 @@ const DetalleCliente = () => {
 
               <TabsContent value="ubicacion" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Dirección</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Dirección
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {cliente.direccion && (
                       <div className="space-y-1 col-span-2">
@@ -1857,7 +1949,10 @@ const DetalleCliente = () => {
 
               <TabsContent value="fiscal" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Información Fiscal</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-primary" />
+                    Información Fiscal
+                  </h3>
                   <div className="grid grid-cols-3 gap-4">
                     {cliente.selector_fiscal && (
                       <div className="space-y-1">
@@ -1883,7 +1978,10 @@ const DetalleCliente = () => {
 
               <TabsContent value="asesoria" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Información de la Asesoría</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    Información de la Asesoría
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {cliente.nombre_asesoria && (
                       <div className="space-y-1 col-span-2">
@@ -1912,7 +2010,10 @@ const DetalleCliente = () => {
               <TabsContent value="equipos" className="space-y-6 mt-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold">Equipos del Cliente</h3>
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Wrench className="h-5 w-5 text-primary" />
+                      Equipos del Cliente
+                    </h3>
                     <Dialog open={dialogEquipoOpen} onOpenChange={setDialogEquipoOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm">
@@ -2223,7 +2324,10 @@ const DetalleCliente = () => {
 
               <TabsContent value="archivos" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Archivos PDF</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Archivos PDF
+                  </h3>
                   <p className="text-sm text-muted-foreground">
                     Funcionalidad de gestión de documentos disponible próximamente.
                   </p>
@@ -2232,7 +2336,10 @@ const DetalleCliente = () => {
 
               <TabsContent value="notas" className="space-y-6 mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Notas e Información</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <StickyNote className="h-5 w-5 text-primary" />
+                    Notas e Información
+                  </h3>
                   <div className="grid grid-cols-1 gap-4">
                     {cliente.notas && (
                       <div className="space-y-1">

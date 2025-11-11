@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,11 +27,27 @@ export const DialogoFirmaTicket = ({
   cliente,
 }: DialogoFirmaTicketProps) => {
   const [loading, setLoading] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
   const sigCanvas = useRef<any>(null);
 
   const limpiarFirma = () => {
     sigCanvas.current?.clear();
   };
+
+  const habilitarEdicion = () => {
+    setModoEdicion(true);
+    // Limpiar el canvas para permitir una nueva firma
+    setTimeout(() => {
+      sigCanvas.current?.clear();
+    }, 100);
+  };
+
+  // Resetear el modo de edición cuando se abre el diálogo
+  useEffect(() => {
+    if (open) {
+      setModoEdicion(false);
+    }
+  }, [open]);
 
   const guardarFirma = async () => {
     if (sigCanvas.current?.isEmpty()) {
@@ -54,7 +70,10 @@ export const DialogoFirmaTicket = ({
       if (error) throw error;
 
       toast.success("Firma guardada correctamente");
+      setModoEdicion(false);
       onOpenChange(false);
+      // Recargar la página para mostrar la firma actualizada
+      window.location.reload();
     } catch (error) {
       console.error("Error al guardar firma:", error);
       toast.error("Error al guardar la firma");
@@ -179,30 +198,52 @@ Firmado electrónicamente el: ${ticket.fecha_firma ? new Date(ticket.fecha_firma
             </div>
           )}
 
-          {/* Canvas de firma */}
+          {/* Canvas de firma o firma guardada */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="font-semibold text-sm">Firma del cliente:</h4>
-              <Button variant="outline" size="sm" onClick={limpiarFirma}>
-                Limpiar
-              </Button>
+              {(!ticket.firma_cliente || modoEdicion) && (
+                <Button variant="outline" size="sm" onClick={limpiarFirma}>
+                  Limpiar
+                </Button>
+              )}
             </div>
             <Card className="p-2 bg-white">
-              <SignatureCanvas
-                ref={sigCanvas}
-                canvasProps={{
-                  className: "w-full h-[200px] border border-border rounded",
-                }}
-                backgroundColor="white"
-              />
+              {ticket.firma_cliente && !modoEdicion ? (
+                <div className="relative w-full">
+                  <img
+                    src={ticket.firma_cliente}
+                    alt="Firma del cliente"
+                    className="w-full h-[200px] object-contain border border-border rounded"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={habilitarEdicion}
+                    className="mt-2 w-full"
+                  >
+                    Editar Firma
+                  </Button>
+                </div>
+              ) : (
+                <SignatureCanvas
+                  ref={sigCanvas}
+                  canvasProps={{
+                    className: "w-full h-[200px] border border-border rounded",
+                  }}
+                  backgroundColor="white"
+                />
+              )}
             </Card>
           </div>
 
           {/* Botones de acción */}
           <div className="space-y-3">
-            <Button onClick={guardarFirma} disabled={loading} className="w-full">
-              {loading ? "Guardando..." : "Guardar Firma"}
-            </Button>
+            {(!ticket.firma_cliente || modoEdicion) && (
+              <Button onClick={guardarFirma} disabled={loading} className="w-full">
+                {loading ? "Guardando..." : "Guardar Firma"}
+              </Button>
+            )}
 
             <div className="grid grid-cols-3 gap-2">
               <Button variant="outline" onClick={enviarPorWhatsApp} disabled={!cliente?.telefono}>

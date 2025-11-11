@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Phone, Mail, Upload, X, Image as ImageIcon, AlertTriangle, FileX, Tag, FileDown } from "lucide-react";
+import { Plus, Search, Phone, Mail, Upload, X, Image as ImageIcon, AlertTriangle, FileX, Tag, FileDown, Download, MapPin } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toast } from "sonner";
@@ -305,19 +305,19 @@ const Clientes = () => {
     }
   };
 
-  const exportarPDF = () => {
+  const exportarPDF = async () => {
     try {
       const doc = new jsPDF();
-      
+
       // Título
       doc.setFontSize(16);
       doc.text("Listado de Clientes", 14, 15);
-      
+
       // Fecha del reporte
       doc.setFontSize(10);
       doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 22);
       doc.text(`Total de clientes: ${filteredClientes.length}`, 14, 28);
-      
+
       // Preparar datos para la tabla
       const tableData = filteredClientes.map((cliente) => [
         cliente.nombre,
@@ -328,7 +328,7 @@ const Clientes = () => {
         cliente.selector_fiscal || "-",
         cliente.tipo_contrato || "-",
       ]);
-      
+
       // Crear tabla
       autoTable(doc, {
         startY: 34,
@@ -347,14 +347,65 @@ const Clientes = () => {
           6: { cellWidth: 30 },
         },
       });
-      
+
+      // Agregar logo en la parte inferior derecha
+      try {
+        const response = await fetch('/logo.png');
+        const blob = await response.blob();
+        const reader = new FileReader();
+
+        await new Promise((resolve, reject) => {
+          reader.onloadend = () => {
+            const base64data = reader.result as string;
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const logoWidth = 30;
+            const logoHeight = 15;
+            const margin = 10;
+
+            // Posicionar en la parte inferior derecha
+            const x = pageWidth - logoWidth - margin;
+            const y = pageHeight - logoHeight - margin;
+
+            doc.addImage(base64data, 'PNG', x, y, logoWidth, logoHeight);
+            resolve(null);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (logoError) {
+        console.error("Error cargando logo:", logoError);
+        // Continuar sin logo si hay error
+      }
+
       // Guardar PDF
       doc.save(`listado-clientes-${new Date().toISOString().split('T')[0]}.pdf`);
-      
+
       toast.success("Listado exportado en PDF");
     } catch (error) {
       console.error("Error exportando PDF:", error);
       toast.error("Error al exportar el listado");
+    }
+  };
+
+  const descargarLogo = async (logoUrl: string, nombreCliente: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar que se abra el detalle del cliente
+    try {
+      const response = await fetch(logoUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const extension = logoUrl.split('.').pop()?.split('?')[0] || 'png';
+      a.download = `logo-${nombreCliente.toLowerCase().replace(/\s+/g, '-')}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success("Logo descargado");
+    } catch (error) {
+      console.error("Error descargando logo:", error);
+      toast.error("Error al descargar el logo");
     }
   };
 
@@ -998,46 +1049,62 @@ const Clientes = () => {
           filteredClientes.map((cliente) => (
             <Card
               key={cliente.id}
-              className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/50 overflow-hidden group ${
-                !cliente.activo ? "opacity-60 border-muted" : ""
+              className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.03] hover:border-primary/60 overflow-hidden group relative ${
+                !cliente.activo ? "opacity-60 border-muted" : "border-border/50"
               }`}
               onClick={() => navigate(`/clientes/${cliente.id}`)}
             >
-              {/* Logo Header */}
+              {/* Logo Header con efecto mejorado */}
               {cliente.logo_url && (
-                <div className="bg-gradient-to-br from-muted/30 to-muted/50 p-6 flex items-center justify-center border-b transition-colors group-hover:from-primary/5 group-hover:to-primary/10">
-                  <img 
-                    src={cliente.logo_url} 
+                <div className="bg-gradient-to-br from-muted/40 to-muted/60 p-8 flex items-center justify-center border-b transition-all duration-300 group-hover:from-primary/10 group-hover:to-primary/20 relative">
+                  <img
+                    src={cliente.logo_url}
                     alt={`Logo ${cliente.nombre}`}
-                    className="max-h-24 max-w-full object-contain"
+                    className="max-h-28 max-w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       e.currentTarget.parentElement!.style.display = 'none';
                     }}
                   />
+                  {/* Botón de descarga del logo */}
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg"
+                    onClick={(e) => descargarLogo(cliente.logo_url!, cliente.nombre, e)}
+                    title="Descargar logo"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
-              
-              <CardHeader>
+
+              <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors">{cliente.nombre}</CardTitle>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <CardTitle className="text-xl group-hover:text-primary transition-colors duration-300">{cliente.nombre}</CardTitle>
                       {!cliente.activo && (
                         <Badge variant="secondary" className="text-xs">
                           Archivado
                         </Badge>
                       )}
+                      {cliente.tipo_contrato && (
+                        <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                          {cliente.tipo_contrato}
+                        </Badge>
+                      )}
                     </div>
                     {cliente.nombre_fiscal && (
-                      <CardDescription className="font-semibold text-base">{cliente.nombre_fiscal}</CardDescription>
+                      <CardDescription className="font-semibold text-base text-foreground/80">{cliente.nombre_fiscal}</CardDescription>
                     )}
                     {cliente.cif && (
-                      <CardDescription className="flex items-center gap-1">
-                        <span className="font-medium">CIF:</span> {cliente.cif}
+                      <CardDescription className="flex items-center gap-1 text-sm">
+                        <span className="font-semibold text-foreground/70">CIF:</span>
+                        <span className="font-mono">{cliente.cif}</span>
                       </CardDescription>
                     )}
                     {!cliente.activo && cliente.motivo_inactivacion && (
-                      <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs">
+                      <div className="mt-2 p-2.5 bg-destructive/10 border border-destructive/30 rounded-md text-xs">
                         <span className="font-semibold text-destructive">Motivo: </span>
                         <span className="text-muted-foreground">{cliente.motivo_inactivacion}</span>
                       </div>
@@ -1045,15 +1112,15 @@ const Clientes = () => {
                   </div>
                 </div>
               </CardHeader>
-              
-              <CardContent className="space-y-3 pb-6">
+
+              <CardContent className="space-y-3.5 pb-6">
                 {cliente.etiquetas && cliente.etiquetas.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pb-2 border-b">
+                  <div className="flex flex-wrap gap-1.5 pb-3 border-b">
                     {cliente.etiquetas.map((etiqueta) => (
                       <Badge
                         key={etiqueta.id}
                         style={{ backgroundColor: etiqueta.color }}
-                        className="text-xs"
+                        className="text-xs shadow-sm"
                       >
                         {etiqueta.nombre}
                       </Badge>
@@ -1061,11 +1128,13 @@ const Clientes = () => {
                   </div>
                 )}
                 {cliente.telefono && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <a 
-                      href={`tel:${cliente.telefono}`} 
-                      className="text-primary hover:underline font-medium" 
+                  <div className="flex items-center gap-2.5 text-sm group/phone">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover/phone:bg-primary/20 transition-colors">
+                      <Phone className="h-4 w-4 text-primary" />
+                    </div>
+                    <a
+                      href={`tel:${cliente.telefono}`}
+                      className="text-primary hover:underline font-semibold"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {cliente.telefono}
@@ -1073,11 +1142,13 @@ const Clientes = () => {
                   </div>
                 )}
                 {cliente.email && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <a 
-                      href={`mailto:${cliente.email}`} 
-                      className="text-primary hover:underline truncate font-medium" 
+                  <div className="flex items-center gap-2.5 text-sm group/email">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover/email:bg-primary/20 transition-colors">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <a
+                      href={`mailto:${cliente.email}`}
+                      className="text-primary hover:underline truncate font-semibold"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {cliente.email}
@@ -1085,14 +1156,21 @@ const Clientes = () => {
                   </div>
                 )}
                 {cliente.direccion && (
-                  <div className="pt-2 border-t">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      <span className="font-semibold block mb-1">📍 Dirección:</span>
-                      {cliente.direccion}
-                      {cliente.codigo_postal && <><br />{cliente.codigo_postal}</>}
-                      {cliente.poblacion && ` - ${cliente.poblacion}`}
-                      {cliente.provincia && ` (${cliente.provincia})`}
-                    </p>
+                  <div className="pt-3 border-t">
+                    <div className="flex items-start gap-2.5">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground/80 mb-1">Dirección</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {cliente.direccion}
+                          {cliente.codigo_postal && <><br /><span className="font-mono">{cliente.codigo_postal}</span></>}
+                          {cliente.poblacion && ` - ${cliente.poblacion}`}
+                          {cliente.provincia && ` (${cliente.provincia})`}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
