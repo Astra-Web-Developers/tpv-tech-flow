@@ -606,6 +606,48 @@ export type Database = {
         }
         Relationships: []
       }
+      etiquetas_clientes: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
+      etiquetas_tickets: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
       fichajes: {
         Row: {
           created_at: string
@@ -1359,7 +1401,7 @@ export type Database = {
             foreignKeyName: "tickets_etiquetas_etiqueta_id_fkey"
             columns: ["etiqueta_id"]
             isOneToOne: false
-            referencedRelation: "etiquetas"
+            referencedRelation: "etiquetas_tickets"
             referencedColumns: ["id"]
           },
           {
