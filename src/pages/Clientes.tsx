@@ -127,10 +127,10 @@ const Clientes = () => {
         (data || []).map(async (cliente) => {
           const { data: etiquetasData } = await supabase
             .from("clientes_etiquetas")
-            .select("etiqueta_id, etiquetas(id, nombre, color)")
+            .select("etiqueta_id, etiquetas_clientes(id, nombre, color)")
             .eq("cliente_id", cliente.id);
 
-          const etiquetas = etiquetasData?.map((item: any) => item.etiquetas).filter(Boolean) || [];
+          const etiquetas = etiquetasData?.map((item: any) => item.etiquetas_clientes).filter(Boolean) || [];
           
           // Cargar contrato activo
           const { data: contratoData } = await supabase
@@ -160,7 +160,7 @@ const Clientes = () => {
   const loadEtiquetas = async () => {
     try {
       const { data, error } = await supabase
-        .from("etiquetas")
+        .from("etiquetas_clientes")
         .select("*")
         .order("nombre");
 
@@ -472,6 +472,46 @@ const Clientes = () => {
             Nuevo Cliente
           </Button>
         </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-blue-700">Total Clientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-blue-900">{clientes.length}</div>
+            <p className="text-xs text-blue-600 mt-1">{filteredClientes.length} mostrados</p>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-green-700">Activos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-900">{clientes.filter(c => c.activo).length}</div>
+            <p className="text-xs text-green-600 mt-1">{((clientes.filter(c => c.activo).length / clientes.length) * 100).toFixed(0)}% del total</p>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-orange-700">Con Contrato</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-orange-900">{clientes.filter(c => c.tipo_contrato).length}</div>
+            <p className="text-xs text-orange-600 mt-1">De mantenimiento</p>
+          </CardContent>
+        </Card>
+        <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-purple-700">Etiquetas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-900">{etiquetasDisponibles.length}</div>
+            <p className="text-xs text-purple-600 mt-1">Categorías disponibles</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Mantener el diálogo para uso futuro si es necesario, pero oculto */}

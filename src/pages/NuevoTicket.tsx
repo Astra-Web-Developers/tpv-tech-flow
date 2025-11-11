@@ -89,7 +89,7 @@ const NuevoTicket = () => {
   const loadEtiquetas = async () => {
     try {
       const { data, error } = await supabase
-        .from("etiquetas")
+        .from("etiquetas_tickets")
         .select("*")
         .order("nombre");
 

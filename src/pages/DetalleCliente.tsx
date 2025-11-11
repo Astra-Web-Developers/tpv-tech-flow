@@ -3,57 +3,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Phone,
-  Mail,
-  MapPin,
-  Plus,
-  Edit2,
-  Wrench,
-  AlertTriangle,
-  FileX,
-  FileDown,
-  Send,
-  History,
-  CheckCircle2,
-  FileText,
-  Calendar,
-  Building2,
-  Upload,
-  X,
-  Users,
-  Globe,
-  Receipt,
-  Briefcase,
-  FileType,
-  StickyNote,
-  ScrollText,
-  Trash2,
-  Download,
-} from "lucide-react";
+import { ArrowLeft, Plus, Edit2, CheckCircle2, Trash2, Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { logView, logUpdate, logCreate, logExport } from "@/lib/auditLog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ConfigurableSelect } from "@/components/ConfigurableSelect";
-import { EtiquetasManager } from "@/components/EtiquetasManager";
-import { IncidenciasEquipo } from "@/components/IncidenciasEquipo";
+import { logView, logUpdate } from "@/lib/auditLog";
+import { ClienteInfoTabs } from "@/components/cliente/ClienteInfoTabs";
+import { EquiposSection } from "@/components/cliente/EquiposSection";
+import { ContratosSection } from "@/components/cliente/ContratosSection";
+import { ClienteAlerts } from "@/components/cliente/ClienteAlerts";
+import { DialogInactivacion } from "@/components/cliente/DialogInactivacion";
+import { TicketsHistorial } from "@/components/cliente/TicketsHistorial";
+import { Building2, Users, MapPin, Receipt, Briefcase, Wrench, FileType, StickyNote, ScrollText, FileText, Calendar, Phone, Mail, ExternalLink, AlertTriangle } from "lucide-react";
 
 interface Cliente {
   id: string;
@@ -97,6 +59,24 @@ interface Equipo {
   marca: string | null;
   modelo: string | null;
   numero_serie: string | null;
+  numero_serie_bdp: string | null;
+  numero_serie_wind: string | null;
+  numero_serie_store_manager: string | null;
+  numero_serie_cashlogy: string | null;
+  numero_serie_impresora: string | null;
+  contraseñas: string | null;
+  tpv: string | null;
+  wind: string | null;
+  ram: string | null;
+  impresora: string | null;
+  software: string | null;
+  v: string | null;
+  tbai: string | null;
+  c_inteligente: string | null;
+  instalacion: string | null;
+  pendrive_c_seg: string | null;
+  garantia_inicio: string | null;
+  garantia_fin: string | null;
   fecha_instalacion: string | null;
 }
 
@@ -179,7 +159,6 @@ const DetalleCliente = () => {
     }
   }, [id]);
 
-  // Sincronizar datos del contrato cuando hay contratos disponibles
   useEffect(() => {
     if (contratos.length > 0 && editMode) {
       const contratoActivo = contratos.find(c => c.activo) || contratos[0];
@@ -202,7 +181,6 @@ const DetalleCliente = () => {
       if (error) throw error;
       setCliente(data);
 
-      // Registrar visualización del cliente
       if (id) {
         await logView("clientes", id);
       }
@@ -232,7 +210,6 @@ const DetalleCliente = () => {
 
   const loadTickets = async () => {
     try {
-      // Cargar tickets abiertos
       const { data: abiertos, error: errorAbiertos } = await supabase
         .from("tickets")
         .select("id, numero, titulo, estado, fecha_creacion")
@@ -243,7 +220,6 @@ const DetalleCliente = () => {
       if (errorAbiertos) throw errorAbiertos;
       setTicketsAbiertos(abiertos || []);
 
-      // Cargar historial completo
       const { data: completo, error: errorCompleto } = await supabase
         .from("tickets")
         .select("id, numero, titulo, estado, fecha_creacion")
@@ -253,7 +229,6 @@ const DetalleCliente = () => {
       if (errorCompleto) throw errorCompleto;
       setHistorialCompleto(completo || []);
 
-      // Cargar tickets recientes para la sección existente
       const { data, error } = await supabase
         .from("tickets")
         .select("id, numero, titulo, estado, fecha_creacion")
@@ -301,101 +276,6 @@ const DetalleCliente = () => {
     } catch (error) {
       console.error("Error cargando configuración de equipos:", error);
     }
-  };
-
-  const exportarHistorial = async () => {
-    try {
-      const doc = new jsPDF();
-
-      // Título
-      doc.setFontSize(16);
-      doc.text(`Historial de Tickets - ${cliente?.nombre || "Cliente"}`, 14, 15);
-
-      // Fecha del reporte
-      doc.setFontSize(10);
-      doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 22);
-
-      // Preparar datos para la tabla
-      const tableData = historialCompleto.map((t) => [
-        `#${t.numero}`,
-        t.titulo,
-        t.estado === 'activo' ? 'Activo' : 'Finalizado',
-        new Date(t.fecha_creacion).toLocaleDateString(),
-      ]);
-
-      // Crear tabla
-      autoTable(doc, {
-        startY: 28,
-        head: [["Número", "Título", "Estado", "Fecha Creación"]],
-        body: tableData,
-        theme: 'grid',
-        headStyles: { fillColor: [41, 128, 185] },
-        styles: { fontSize: 10 },
-        columnStyles: {
-          0: { cellWidth: 25 },
-          1: { cellWidth: 70 },
-          2: { cellWidth: 35 },
-          3: { cellWidth: 40 },
-        },
-      });
-
-      // Resumen al final
-      const finalY = (doc as any).lastAutoTable.finalY || 28;
-      doc.setFontSize(12);
-      doc.text("Resumen", 14, finalY + 10);
-      doc.setFontSize(10);
-      doc.text(`Total de tickets: ${historialCompleto.length}`, 14, finalY + 17);
-      doc.text(`Tickets abiertos: ${ticketsAbiertos.length}`, 14, finalY + 24);
-      doc.text(`Tickets finalizados: ${historialCompleto.filter((t) => t.estado === "finalizado").length}`, 14, finalY + 31);
-
-      // Agregar logo en la parte inferior derecha
-      try {
-        const response = await fetch('/logo.png');
-        const blob = await response.blob();
-        const reader = new FileReader();
-
-        await new Promise((resolve, reject) => {
-          reader.onloadend = () => {
-            const base64data = reader.result as string;
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const logoWidth = 30;
-            const logoHeight = 15;
-            const margin = 10;
-
-            // Posicionar en la parte inferior derecha
-            const x = pageWidth - logoWidth - margin;
-            const y = pageHeight - logoHeight - margin;
-
-            doc.addImage(base64data, 'PNG', x, y, logoWidth, logoHeight);
-            resolve(null);
-          };
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-      } catch (logoError) {
-        console.error("Error cargando logo:", logoError);
-        // Continuar sin logo si hay error
-      }
-
-      // Guardar PDF
-      doc.save(`historial-tickets-${cliente?.nombre || "cliente"}.pdf`);
-
-      // Registrar exportación en auditoría
-      if (id) {
-        await logExport("tickets", `Exportación PDF de historial completo de tickets del cliente ${cliente?.nombre}`);
-      }
-
-      toast.success("Historial exportado en PDF");
-    } catch (error) {
-      console.error("Error exportando PDF:", error);
-      toast.error("Error al exportar el historial");
-    }
-  };
-
-  const enviarHistorialEmail = async () => {
-    // Aquí implementarías el envío por email
-    toast.info("Función de envío por email próximamente");
   };
 
   const descargarLogo = async (logoUrl: string, nombreCliente: string) => {
@@ -477,7 +357,6 @@ const DetalleCliente = () => {
     try {
       let logoUrl = cliente.logo_url;
 
-      // Si hay un archivo de logo, subirlo primero
       if (logoFile) {
         const uploadedUrl = await uploadLogoToSupabase(logoFile);
         if (uploadedUrl) {
@@ -496,7 +375,6 @@ const DetalleCliente = () => {
 
       if (error) throw error;
 
-      // Registrar actualización en auditoría
       if (id) {
         await logUpdate("clientes", id, {}, updatedCliente);
       }
@@ -527,10 +405,10 @@ const DetalleCliente = () => {
       if (error) throw error;
 
       toast.success("Equipo agregado");
-      setNuevoEquipo({ 
-        tipo: "", 
-        marca: "", 
-        modelo: "", 
+      setNuevoEquipo({
+        tipo: "",
+        marca: "",
+        modelo: "",
         numero_serie: "",
         numero_serie_bdp: "",
         numero_serie_wind: "",
@@ -560,13 +438,13 @@ const DetalleCliente = () => {
   };
 
   const handleDelete = async () => {
-    // Si el cliente está activo, abrir el diálogo de inactivación
+    if (!cliente) return;
+
     if (cliente.activo) {
       setDialogInactivacionOpen(true);
       return;
     }
 
-    // Si está inactivo, reactivar directamente
     if (!confirm("¿Deseas reactivar este cliente?")) {
       return;
     }
@@ -596,9 +474,9 @@ const DetalleCliente = () => {
     try {
       const { error } = await supabase
         .from("clientes")
-        .update({ 
+        .update({
           activo: false,
-          motivo_inactivacion: motivoInactivacion 
+          motivo_inactivacion: motivoInactivacion
         })
         .eq("id", id);
 
@@ -622,7 +500,6 @@ const DetalleCliente = () => {
 
     try {
       if (contratoEditando) {
-        // Actualizar contrato existente
         const { error } = await supabase
           .from("contratos_mantenimiento")
           .update({
@@ -636,7 +513,6 @@ const DetalleCliente = () => {
         if (error) throw error;
         toast.success("Contrato actualizado");
       } else {
-        // Crear nuevo contrato
         const { error } = await supabase.from("contratos_mantenimiento").insert([
           {
             cliente_id: id,
@@ -719,1051 +595,191 @@ const DetalleCliente = () => {
 
   return (
     <div className="space-y-6">
-      {!cliente.activo && (
-        <Card className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-950">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <div className="flex-1">
-                <p className="font-semibold text-orange-900 dark:text-orange-100">Cliente Archivado</p>
-                <p className="text-sm text-orange-700 dark:text-orange-200">
-                  Este cliente está inactivo. Puedes reactivarlo usando el botón en la parte superior.
-                </p>
-                {cliente.motivo_inactivacion && (
-                  <div className="mt-2 p-2 bg-orange-100 dark:bg-orange-900 rounded border border-orange-300 dark:border-orange-700">
-                    <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">Motivo de inactivación:</p>
-                    <p className="text-sm text-orange-800 dark:text-orange-200">{cliente.motivo_inactivacion}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Alertas del cliente */}
+      <ClienteAlerts
+        clienteActivo={cliente.activo}
+        motivoInactivacion={cliente.motivo_inactivacion}
+        ticketsAbiertos={ticketsAbiertos}
+        clienteId={id!}
+      />
 
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <Button variant="outline" size="icon" onClick={() => navigate("/clientes")} className="shrink-0">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          {cliente.logo_url && (
-            <div className="relative group/logo">
-              <div className="w-20 h-20 rounded-xl border-2 border-border overflow-hidden flex items-center justify-center bg-gradient-to-br from-muted/30 to-muted/50 shadow-sm transition-all duration-300 group-hover/logo:shadow-md group-hover/logo:border-primary/50">
-                <img
-                  src={cliente.logo_url}
-                  alt={`Logo ${cliente.nombre}`}
-                  className="w-full h-full object-contain p-2"
-                  onError={(e) => {
-                    e.currentTarget.parentElement!.style.display = "none";
-                  }}
-                />
-              </div>
-              <Button
-                size="icon"
-                variant="secondary"
-                className="absolute -bottom-2 -right-2 h-7 w-7 opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300 shadow-lg"
-                onClick={() => descargarLogo(cliente.logo_url!, cliente.nombre)}
-                title="Descargar logo"
+      {/* Header del cliente */}
+      <Card className="border-2 shadow-sm bg-gradient-to-r from-card to-muted/20">
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="flex items-start gap-6 flex-1 min-w-0">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => navigate("/clientes")} 
+                className="shrink-0 mt-1"
               >
-                <Download className="h-3.5 w-3.5" />
+                <ArrowLeft className="h-4 w-4" />
               </Button>
+              
+              {cliente.logo_url && (
+                <div className="relative group/logo shrink-0">
+                  <div className="w-24 h-24 rounded-xl border-2 border-border overflow-hidden flex items-center justify-center bg-white shadow-md transition-all duration-300 group-hover/logo:shadow-lg group-hover/logo:border-primary/50">
+                    <img
+                      src={cliente.logo_url}
+                      alt={`Logo ${cliente.nombre}`}
+                      className="w-full h-full object-contain p-3"
+                      onError={(e) => {
+                        e.currentTarget.parentElement!.style.display = "none";
+                      }}
+                    />
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="absolute -bottom-2 -right-2 h-8 w-8 opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300 shadow-lg"
+                    onClick={() => descargarLogo(cliente.logo_url!, cliente.nombre)}
+                    title="Descargar logo"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
+              <div className="min-w-0 flex-1 space-y-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-3xl font-bold truncate">{cliente.nombre}</h1>
+                  <Badge 
+                    variant={cliente.activo ? "default" : "secondary"}
+                    className={cliente.activo ? "bg-green-600 hover:bg-green-700" : ""}
+                  >
+                    {cliente.activo ? "Activo" : "Archivado"}
+                  </Badge>
+                  {contratos.filter(c => c.activo).length > 0 && (
+                    <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-700">
+                      Con Contrato
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-4 text-sm">
+                  {cliente.cif && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground font-semibold">CIF:</span>
+                      <span className="font-mono font-medium">{cliente.cif}</span>
+                    </div>
+                  )}
+                  {cliente.telefono && (
+                    <a 
+                      href={`tel:${cliente.telefono}`}
+                      className="flex items-center gap-2 text-primary hover:underline font-medium"
+                    >
+                      <Phone className="h-4 w-4" />
+                      {cliente.telefono}
+                    </a>
+                  )}
+                  {cliente.email && (
+                    <a 
+                      href={`mailto:${cliente.email}`}
+                      className="flex items-center gap-2 text-primary hover:underline font-medium"
+                    >
+                      <Mail className="h-4 w-4" />
+                      {cliente.email}
+                    </a>
+                  )}
+                  {cliente.poblacion && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      <span>{cliente.poblacion}{cliente.provincia && `, ${cliente.provincia}`}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <h1 className="text-3xl font-bold truncate">{cliente.nombre}</h1>
-            {cliente.cif && <p className="text-muted-foreground font-mono">CIF: {cliente.cif}</p>}
-            {!cliente.activo && (
-              <Badge variant="secondary" className="mt-1">
-                Cliente Archivado
-              </Badge>
+            
+            {editMode ? (
+              <div className="flex gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditMode(false);
+                    setLogoFile(null);
+                    setLogoPreview("");
+                    loadCliente();
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleUpdate} disabled={uploadingLogo}>
+                  {uploadingLogo ? "Guardando..." : "Guardar Cambios"}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-3 shrink-0">
+                <Button
+                  onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}
+                  className="bg-primary hover:bg-primary/90 shadow-md"
+                  size="lg"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Nuevo Ticket
+                </Button>
+                <Button 
+                  onClick={() => setEditMode(true)} 
+                  variant="outline" 
+                  className="border-2 hover:bg-accent" 
+                  size="lg"
+                >
+                  <Edit2 className="h-5 w-5 mr-2" />
+                  Editar
+                </Button>
+                <Button
+                  onClick={handleDelete}
+                  variant="outline"
+                  className={cliente.activo
+                    ? "border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-md"
+                    : "border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white shadow-md"
+                  }
+                  size="icon"
+                  title={cliente.activo ? "Archivar cliente" : "Reactivar cliente"}
+                >
+                  {cliente.activo ? <Trash2 className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+                </Button>
+              </div>
             )}
           </div>
-        </div>
-        {editMode ? (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditMode(false);
-                setLogoFile(null);
-                setLogoPreview("");
-                loadCliente();
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleUpdate} disabled={uploadingLogo}>
-              {uploadingLogo ? "Guardando..." : "Guardar Cambios"}
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}
-              className="bg-primary hover:bg-primary/90 shadow-md"
-              size="lg"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Nuevo Ticket
-            </Button>
-            <Button onClick={() => setEditMode(true)} variant="outline" className="border-2 hover:bg-accent" size="lg">
-              <Edit2 className="h-5 w-5 mr-2" />
-              Editar
-            </Button>
-            <Button
-              onClick={handleDelete}
-              variant="outline"
-              className={cliente.activo 
-                ? "border-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground shadow-md"
-                : "border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white shadow-md"
-              }
-              size="icon"
-              title={cliente.activo ? "Archivar cliente" : "Reactivar cliente"}
-            >
-              {cliente.activo ? <Trash2 className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Diálogo de Inactivación */}
-      <Dialog open={dialogInactivacionOpen} onOpenChange={setDialogInactivacionOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Archivar Cliente</DialogTitle>
-            <DialogDescription>
-              Por favor, indica el motivo por el cual estás archivando este cliente. Esta información se mostrará junto con el cliente inactivo.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Motivo de Inactivación</Label>
-              <Textarea
-                value={motivoInactivacion}
-                onChange={(e) => setMotivoInactivacion(e.target.value)}
-                placeholder="Ej: Cliente solicitó baja del servicio, incumplimiento de pagos, cierre del negocio, etc."
-                rows={4}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => {
-                  setDialogInactivacionOpen(false);
-                  setMotivoInactivacion("");
-                }} 
-                variant="outline"
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={confirmarInactivacion}
-                variant="destructive"
-                className="flex-1"
-              >
-                Archivar Cliente
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Alertas Visuales */}
-      <div className="flex gap-3">
-        {/* Alerta Moroso - Descomentar y conectar con campo de BD */}
-        {/* {cliente.es_moroso && (
-          <div className="flex items-center gap-2 bg-red-100 text-red-800 px-4 py-3 rounded-lg border-2 border-red-300 font-semibold">
-            <AlertTriangle className="h-5 w-5" />
-            CLIENTE MOROSO
-          </div>
-        )} */}
-        {/* Alerta Sin Contrato */}
-        {/* {!cliente.tiene_contrato && (
-          <div className="flex items-center gap-2 bg-orange-100 text-orange-800 px-4 py-3 rounded-lg border-2 border-orange-300 font-semibold">
-            <FileX className="h-5 w-5" />
-            SIN CONTRATO DE MANTENIMIENTO
-          </div>
-        )} */}
-      </div>
-
-      {/* Tickets Abiertos - Prominente */}
-      {ticketsAbiertos.length > 0 && (
-        <Card className="border-2 border-blue-200 bg-blue-50/50">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-blue-900">Tickets Abiertos ({ticketsAbiertos.length})</CardTitle>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/tickets/nuevo?cliente=${id}`)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Ticket
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {ticketsAbiertos.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className="flex items-center justify-between p-4 bg-white border-2 border-blue-300 rounded-lg hover:shadow-md cursor-pointer transition-all"
-                  onClick={() => navigate(`/tickets/${ticket.id}`)}
-                >
-                  <div className="flex-1">
-                    <p className="font-semibold text-blue-900">
-                      #{ticket.numero} - {ticket.titulo}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Creado: {new Date(ticket.fecha_creacion).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge className="bg-blue-600">ACTIVO</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Contratos de Mantenimiento */}
-      <Card className="border-2 border-primary/20">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            <CardTitle>Contratos de Mantenimiento</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {contratos.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No hay contratos registrados</p>
-          ) : (
-            <div className="space-y-3">
-              {contratos.map((contrato) => {
-                const fechaCaducidad = new Date(contrato.fecha_caducidad);
-                const hoy = new Date();
-                const diasRestantes = Math.ceil((fechaCaducidad.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
-                const estaPorVencer = diasRestantes <= 30 && diasRestantes > 0;
-                const estaVencido = diasRestantes <= 0;
-
-                return (
-                  <div
-                    key={contrato.id}
-                    className={`p-4 border-2 rounded-lg ${
-                      estaVencido
-                        ? "border-red-300 bg-red-50"
-                        : estaPorVencer
-                          ? "border-orange-300 bg-orange-50"
-                          : "border-green-300 bg-green-50"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <p className="font-semibold text-lg">{contrato.tipo}</p>
-                        {contrato.notas && <p className="text-sm text-muted-foreground mt-1">{contrato.notas}</p>}
-                      </div>
-                      <Badge variant={contrato.activo ? "default" : "secondary"}>
-                        {contrato.activo ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-muted-foreground">Inicio</p>
-                          <p className="font-medium">{new Date(contrato.fecha_alta).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-muted-foreground">Vencimiento</p>
-                          <p
-                            className={`font-medium ${
-                              estaVencido ? "text-red-600" : estaPorVencer ? "text-orange-600" : "text-green-600"
-                            }`}
-                          >
-                            {fechaCaducidad.toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    {(estaPorVencer || estaVencido) && (
-                      <div
-                        className={`mt-3 flex items-center gap-2 px-3 py-2 rounded ${
-                          estaVencido ? "bg-red-100 text-red-800" : "bg-orange-100 text-orange-800"
-                        }`}
-                      >
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="text-sm font-medium">
-                          {estaVencido
-                            ? `Vencido hace ${Math.abs(diasRestantes)} días`
-                            : `Vence en ${diasRestantes} días`}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </CardContent>
       </Card>
 
+      {/* Diálogo de Inactivación */}
+      <DialogInactivacion
+        open={dialogInactivacionOpen}
+        onOpenChange={setDialogInactivacionOpen}
+        motivoInactivacion={motivoInactivacion}
+        setMotivoInactivacion={setMotivoInactivacion}
+        onConfirmar={confirmarInactivacion}
+      />
+
+      {/* Contratos de Mantenimiento */}
+      <ContratosSection contratos={contratos} />
+
+      {/* Tabs de información */}
       {editMode ? (
-        <Card>
-          <CardContent className="pt-6">
-            <Tabs defaultValue="empresa" className="w-full">
-              <TabsList className="grid w-full grid-cols-9 gap-1">
-                <TabsTrigger value="empresa" className="flex flex-col gap-1 py-3">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-xs">Empresa</span>
-                </TabsTrigger>
-                <TabsTrigger value="contactos" className="flex flex-col gap-1 py-3">
-                  <Users className="h-4 w-4" />
-                  <span className="text-xs">Contactos</span>
-                </TabsTrigger>
-                <TabsTrigger value="ubicacion" className="flex flex-col gap-1 py-3">
-                  <MapPin className="h-4 w-4" />
-                  <span className="text-xs">Ubicación</span>
-                </TabsTrigger>
-                <TabsTrigger value="fiscal" className="flex flex-col gap-1 py-3">
-                  <Receipt className="h-4 w-4" />
-                  <span className="text-xs">Fiscal</span>
-                </TabsTrigger>
-                <TabsTrigger value="asesoria" className="flex flex-col gap-1 py-3">
-                  <Briefcase className="h-4 w-4" />
-                  <span className="text-xs">Asesoría</span>
-                </TabsTrigger>
-                <TabsTrigger value="equipos" className="flex flex-col gap-1 py-3">
-                  <Wrench className="h-4 w-4" />
-                  <span className="text-xs">Equipos</span>
-                </TabsTrigger>
-                <TabsTrigger value="archivos" className="flex flex-col gap-1 py-3">
-                  <FileType className="h-4 w-4" />
-                  <span className="text-xs">Archivos</span>
-                </TabsTrigger>
-                <TabsTrigger value="notas" className="flex flex-col gap-1 py-3">
-                  <StickyNote className="h-4 w-4" />
-                  <span className="text-xs">Notas</span>
-                </TabsTrigger>
-                <TabsTrigger value="contrato" className="flex flex-col gap-1 py-3">
-                  <ScrollText className="h-4 w-4" />
-                  <span className="text-xs">Contrato</span>
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="empresa" className="space-y-6 mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Estado Card */}
-                  <Card className="border-2 md:col-span-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" />
-                        Estado
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="activo"
-                          checked={cliente.activo}
-                          onCheckedChange={(checked) => setCliente({ ...cliente, activo: checked as boolean })}
-                        />
-                        <Label htmlFor="activo" className="cursor-pointer font-medium text-lg">
-                          {cliente.activo ? "Activo" : "Inactivo"}
-                        </Label>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Etiquetas Card */}
-                  <Card className="border-2 md:col-span-2">
-                    <CardContent className="pt-6">
-                      <EtiquetasManager clienteId={id!} onUpdate={loadCliente} />
-                    </CardContent>
-                  </Card>
-
-                  {/* Logo Card */}
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        Logo de la Empresa
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Tabs defaultValue="upload" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="upload">Subir Archivo</TabsTrigger>
-                          <TabsTrigger value="url">URL</TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="upload" className="space-y-3 mt-4">
-                          <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
-                            {logoPreview || cliente.logo_url ? (
-                              <div className="relative w-full">
-                                <img
-                                  src={logoPreview || cliente.logo_url || ""}
-                                  alt="Vista previa"
-                                  className="max-h-32 mx-auto object-contain rounded"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="absolute -top-2 -right-2"
-                                  onClick={clearLogo}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                                {logoFile && (
-                                  <p className="text-xs text-center text-muted-foreground mt-2">{logoFile.name}</p>
-                                )}
-                              </div>
-                            ) : (
-                              <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
-                                <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                                <p className="text-sm font-medium">Click para seleccionar</p>
-                                <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG hasta 5MB</p>
-                              </label>
-                            )}
-                            <Input
-                              id="logo-upload"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleLogoFileChange}
-                            />
-                          </div>
-                        </TabsContent>
-
-                        <TabsContent value="url" className="space-y-3 mt-4">
-                          <Input
-                            type="url"
-                            placeholder="https://ejemplo.com/logo.png"
-                            value={cliente.logo_url || ""}
-                            onChange={(e) => setCliente({ ...cliente, logo_url: e.target.value })}
-                          />
-                          {cliente.logo_url && (
-                            <div className="relative border-2 border-dashed rounded-lg p-4">
-                              <img
-                                src={cliente.logo_url}
-                                alt="Logo preview"
-                                className="max-h-32 mx-auto object-contain rounded"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                            </div>
-                          )}
-                        </TabsContent>
-                      </Tabs>
-                    </CardContent>
-                  </Card>
-
-                  {/* Datos Básicos Card */}
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Datos Básicos
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Nombre de la Empresa *</Label>
-                        <Input
-                          value={cliente.nombre}
-                          onChange={(e) => setCliente({ ...cliente, nombre: e.target.value })}
-                          required
-                          className="font-medium"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Nombre Fiscal</Label>
-                        <Input
-                          value={cliente.nombre_fiscal || ""}
-                          onChange={(e) => setCliente({ ...cliente, nombre_fiscal: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>CIF/NIF</Label>
-                        <Input
-                          value={cliente.cif || ""}
-                          onChange={(e) => setCliente({ ...cliente, cif: e.target.value })}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Fechas Card */}
-                  <Card className="border-2 md:col-span-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Fechas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <Label htmlFor="fecha_alta_cliente">Fecha de Alta del Cliente</Label>
-                        <Input
-                          id="fecha_alta_cliente"
-                          type="date"
-                          value={cliente.fecha_alta_cliente || ""}
-                          onChange={(e) => setCliente({ ...cliente, fecha_alta_cliente: e.target.value })}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="contactos" className="space-y-6 mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Contacto Principal Card */}
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Contacto Principal
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Persona de Contacto</Label>
-                        <Input
-                          value={cliente.persona_contacto || ""}
-                          onChange={(e) => setCliente({ ...cliente, persona_contacto: e.target.value })}
-                          placeholder="Nombre del contacto"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          <Phone className="h-3 w-3" />
-                          Teléfono
-                        </Label>
-                        <Input
-                          value={cliente.telefono || ""}
-                          onChange={(e) => setCliente({ ...cliente, telefono: e.target.value })}
-                          placeholder="+34 123 456 789"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          <Mail className="h-3 w-3" />
-                          Email
-                        </Label>
-                        <Input
-                          type="email"
-                          value={cliente.email || ""}
-                          onChange={(e) => setCliente({ ...cliente, email: e.target.value })}
-                          placeholder="contacto@empresa.com"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Encargado Card */}
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Encargado
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Nombre del Encargado</Label>
-                        <Input
-                          value={cliente.nombre_encargado || ""}
-                          onChange={(e) => setCliente({ ...cliente, nombre_encargado: e.target.value })}
-                          placeholder="Nombre del encargado"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          <Phone className="h-3 w-3" />
-                          Teléfono del Encargado
-                        </Label>
-                        <Input
-                          value={cliente.telefono_encargado || ""}
-                          onChange={(e) => setCliente({ ...cliente, telefono_encargado: e.target.value })}
-                          placeholder="+34 123 456 789"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="ubicacion" className="space-y-6 mt-6">
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Dirección Completa
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 md:col-span-2">
-                        <Label>Dirección</Label>
-                        <Input
-                          value={cliente.direccion || ""}
-                          onChange={(e) => setCliente({ ...cliente, direccion: e.target.value })}
-                          placeholder="Calle, número, piso..."
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Código Postal</Label>
-                        <Input
-                          value={cliente.codigo_postal || ""}
-                          onChange={(e) => setCliente({ ...cliente, codigo_postal: e.target.value })}
-                          placeholder="00000"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Población</Label>
-                        <Input
-                          value={cliente.poblacion || ""}
-                          onChange={(e) => setCliente({ ...cliente, poblacion: e.target.value })}
-                          placeholder="Población"
-                        />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <Label>Provincia</Label>
-                        <Input
-                          value={cliente.provincia || ""}
-                          onChange={(e) => setCliente({ ...cliente, provincia: e.target.value })}
-                          placeholder="Provincia"
-                        />
-                      </div>
-                      {cliente.direccion && (
-                        <div className="md:col-span-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              window.open(
-                                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                  `${cliente.direccion}, ${cliente.codigo_postal || ""} ${cliente.poblacion || ""}, ${cliente.provincia || ""}`
-                                )}`,
-                                "_blank"
-                              );
-                            }}
-                          >
-                            <MapPin className="h-4 w-4 mr-2" />
-                            Ver en Google Maps
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="fiscal" className="space-y-6 mt-6">
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Receipt className="h-4 w-4" />
-                      Información Fiscal
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Selector Fiscal</Label>
-                        <Select
-                          value={cliente.selector_fiscal || ""}
-                          onValueChange={(value) => setCliente({ ...cliente, selector_fiscal: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="nada">Nada</SelectItem>
-                            <SelectItem value="ticketbai">TicketBAI</SelectItem>
-                            <SelectItem value="verifactu">VeriFactu</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>R. IVA</Label>
-                        <Input
-                          value={cliente.r_iva || ""}
-                          onChange={(e) => setCliente({ ...cliente, r_iva: e.target.value })}
-                          placeholder="R. IVA"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Epígrafe</Label>
-                        <Input
-                          value={cliente.epigrafe || ""}
-                          onChange={(e) => setCliente({ ...cliente, epigrafe: e.target.value })}
-                          placeholder="Epígrafe"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="asesoria" className="space-y-6 mt-6">
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
-                      Información de la Asesoría
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 md:col-span-2">
-                        <Label>Nombre de la Asesoría</Label>
-                        <Input
-                          value={cliente.nombre_asesoria || ""}
-                          onChange={(e) => setCliente({ ...cliente, nombre_asesoria: e.target.value })}
-                          placeholder="Nombre de la asesoría"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          <Phone className="h-3 w-3" />
-                          Teléfono Asesoría
-                        </Label>
-                        <Input
-                          value={cliente.telefono_asesoria || ""}
-                          onChange={(e) => setCliente({ ...cliente, telefono_asesoria: e.target.value })}
-                          placeholder="+34 123 456 789"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Persona de Contacto</Label>
-                        <Input
-                          value={cliente.persona_contacto_asesoria || ""}
-                          onChange={(e) => setCliente({ ...cliente, persona_contacto_asesoria: e.target.value })}
-                          placeholder="Nombre del contacto"
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="equipos" className="space-y-6 mt-6">
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Wrench className="h-4 w-4" />
-                      Equipos del Cliente
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-8">
-                      <Wrench className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Los equipos se pueden gestionar desde la sección de equipos en la vista de solo lectura.
-                      </p>
-                      <p className="text-xs text-muted-foreground">Sal del modo edición para gestionar equipos</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="archivos" className="space-y-6 mt-6">
-                <Card className="border-2">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FileType className="h-4 w-4" />
-                      Archivos PDF
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-8">
-                      <FileType className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Los archivos PDF se pueden gestionar desde la sección de documentos en la vista de solo lectura.
-                      </p>
-                      <p className="text-xs text-muted-foreground">Sal del modo edición para gestionar documentos</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="notas" className="space-y-6 mt-6">
-                <div className="grid grid-cols-1 gap-6">
-                  {/* Información Destacada Card */}
-                  <Card className="border-2 border-primary/30 bg-primary/5">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-primary" />
-                        Información Destacada
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Textarea
-                        value={cliente.informacion_destacada || ""}
-                        onChange={(e) => setCliente({ ...cliente, informacion_destacada: e.target.value })}
-                        rows={3}
-                        placeholder="Información importante o destacada del cliente..."
-                        className="bg-background"
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Notas Especiales Card */}
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <StickyNote className="h-4 w-4" />
-                        Notas Especiales
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Textarea
-                        value={cliente.notas_especiales || ""}
-                        onChange={(e) => setCliente({ ...cliente, notas_especiales: e.target.value })}
-                        rows={3}
-                        placeholder="Notas especiales sobre el cliente..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Notas Adicionales Card */}
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Notas Adicionales
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Textarea
-                        value={cliente.notas_adicionales || ""}
-                        onChange={(e) => setCliente({ ...cliente, notas_adicionales: e.target.value })}
-                        rows={3}
-                        placeholder="Otras notas sobre el cliente..."
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Notas Generales Card */}
-                  <Card className="border-2">
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <ScrollText className="h-4 w-4" />
-                        Notas Generales
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Textarea
-                        value={cliente.notas || ""}
-                        onChange={(e) => setCliente({ ...cliente, notas: e.target.value })}
-                        rows={4}
-                        placeholder="Notas generales del cliente..."
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="contrato" className="space-y-6 mt-6">
-                {/* Avisos */}
-                <Card className="border-2 border-red-500/50 bg-red-50">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2 text-red-700">
-                      <AlertTriangle className="h-4 w-4" />
-                      Avisos Importantes
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="aviso_moroso"
-                        checked={cliente.aviso_moroso}
-                        onCheckedChange={(checked) =>
-                          setCliente({ ...cliente, aviso_moroso: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="aviso_moroso" className="cursor-pointer font-medium text-red-700">
-                        Cliente Moroso
-                      </Label>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-red-700">Avisos Adicionales (ej: Cobrar antes de trabajar)</Label>
-                      <Textarea
-                        value={cliente.aviso_cobrar_antes || ""}
-                        onChange={(e) => setCliente({ ...cliente, aviso_cobrar_antes: e.target.value })}
-                        rows={2}
-                        placeholder="Cobrar antes de trabajar, requiere autorización, etc..."
-                        className="bg-white border-red-300"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Contratos de Mantenimiento */}
-                <Card className="border-2">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <ScrollText className="h-4 w-4" />
-                        Contratos de Mantenimiento
-                      </CardTitle>
-                      <Dialog open={dialogContratoOpen} onOpenChange={setDialogContratoOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" onClick={abrirDialogoNuevoContrato}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Nuevo Contrato
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>
-                              {contratoEditando ? "Editar Contrato" : "Nuevo Contrato de Mantenimiento"}
-                            </DialogTitle>
-                            <DialogDescription>
-                              Completa la información del contrato
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Tipo de Contrato*</Label>
-                              <Select
-                                value={nuevoContrato.tipo}
-                                onValueChange={(value) => setNuevoContrato({ ...nuevoContrato, tipo: value })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="trimestral">Trimestral</SelectItem>
-                                  <SelectItem value="semestral">Semestral</SelectItem>
-                                  <SelectItem value="anual">Anual</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label>Fecha de Alta*</Label>
-                                <Input
-                                  type="date"
-                                  value={nuevoContrato.fecha_alta}
-                                  onChange={(e) =>
-                                    setNuevoContrato({ ...nuevoContrato, fecha_alta: e.target.value })
-                                  }
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Fecha de Caducidad*</Label>
-                                <Input
-                                  type="date"
-                                  value={nuevoContrato.fecha_caducidad}
-                                  onChange={(e) =>
-                                    setNuevoContrato({ ...nuevoContrato, fecha_caducidad: e.target.value })
-                                  }
-                                />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Notas</Label>
-                              <Textarea
-                                value={nuevoContrato.notas}
-                                onChange={(e) => setNuevoContrato({ ...nuevoContrato, notas: e.target.value })}
-                                rows={3}
-                                placeholder="Notas adicionales..."
-                              />
-                            </div>
-                            <Button onClick={guardarContrato} className="w-full">
-                              {contratoEditando ? "Actualizar Contrato" : "Crear Contrato"}
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {contratos.filter(c => c.activo).length === 0 ? (
-                      <p className="text-muted-foreground text-center py-4">No hay contratos activos</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {contratos
-                          .filter(c => c.activo)
-                          .map((contrato) => {
-                            const fechaCaducidad = new Date(contrato.fecha_caducidad);
-                            const hoy = new Date();
-                            const estaExpirado = fechaCaducidad < hoy;
-
-                            return (
-                              <div
-                                key={contrato.id}
-                                className={`p-4 border-2 rounded-lg ${
-                                  estaExpirado ? "border-red-300 bg-red-50" : "border-primary/20 bg-primary/5"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex-1">
-                                    <p className={`font-semibold capitalize ${estaExpirado ? "text-red-700" : ""}`}>
-                                      Contrato {contrato.tipo}
-                                    </p>
-                                    {estaExpirado && (
-                                      <Badge variant="destructive" className="mt-1">
-                                        <AlertTriangle className="h-3 w-3 mr-1" />
-                                        Expirado
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => editarContrato(contrato)}
-                                    >
-                                      <Edit2 className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => eliminarContrato(contrato.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-600" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                  <div>
-                                    <Label className="text-muted-foreground text-xs">Fecha de Alta</Label>
-                                    <p className="font-medium">
-                                      {new Date(contrato.fecha_alta).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-muted-foreground text-xs">Fecha de Caducidad</Label>
-                                    <p className={`font-medium ${estaExpirado ? "text-red-700" : ""}`}>
-                                      {new Date(contrato.fecha_caducidad).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  {contrato.notas && (
-                                    <div className="col-span-2">
-                                      <Label className="text-muted-foreground text-xs">Notas</Label>
-                                      <p className="text-sm">{contrato.notas}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+        <ClienteInfoTabs
+          cliente={cliente}
+          setCliente={setCliente}
+          clienteId={id!}
+          onUpdate={loadCliente}
+          logoFile={logoFile}
+          logoPreview={logoPreview}
+          onLogoFileChange={handleLogoFileChange}
+          onClearLogo={clearLogo}
+          contratos={contratos}
+          dialogContratoOpen={dialogContratoOpen}
+          setDialogContratoOpen={setDialogContratoOpen}
+          contratoEditando={contratoEditando}
+          nuevoContrato={nuevoContrato}
+          setNuevoContrato={setNuevoContrato}
+          onGuardarContrato={guardarContrato}
+          onEditarContrato={editarContrato}
+          onEliminarContrato={eliminarContrato}
+          onAbrirDialogoNuevoContrato={abrirDialogoNuevoContrato}
+        />
       ) : (
         <Card>
           <CardContent className="pt-6">
@@ -1780,600 +796,494 @@ const DetalleCliente = () => {
                 <TabsTrigger value="contrato">Contrato</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="empresa" className="space-y-4 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-primary" />
-                    Datos de la Empresa
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {cliente.logo_url && (
-                      <div className="col-span-2 flex justify-center">
-                        <div className="relative group/logo-view">
-                          <div className="bg-gradient-to-br from-muted/30 to-muted/50 rounded-xl border-2 border-border p-4 transition-all duration-300 group-hover/logo-view:shadow-lg group-hover/logo-view:border-primary/50">
-                            <img
-                              src={cliente.logo_url}
-                              alt={`Logo ${cliente.nombre}`}
-                              className="max-h-32 object-contain"
-                              onError={(e) => {
-                                e.currentTarget.parentElement!.style.display = "none";
-                              }}
-                            />
+              <TabsContent value="empresa" className="space-y-6 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Logo Card */}
+                  {cliente.logo_url && (
+                    <Card className="md:col-span-2 border-2 bg-gradient-to-br from-muted/30 to-muted/50">
+                      <CardContent className="pt-6">
+                        <div className="flex flex-col items-center justify-center space-y-4">
+                          <div className="relative group/logo-view">
+                            <div className="bg-white rounded-xl border-2 border-border p-6 shadow-md transition-all duration-300 group-hover/logo-view:shadow-xl group-hover/logo-view:border-primary/50">
+                              <img
+                                src={cliente.logo_url}
+                                alt={`Logo ${cliente.nombre}`}
+                                className="max-h-40 object-contain"
+                                onError={(e) => {
+                                  e.currentTarget.parentElement!.style.display = "none";
+                                }}
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/logo-view:opacity-100 transition-opacity duration-300 shadow-lg gap-2"
+                              onClick={() => descargarLogo(cliente.logo_url!, cliente.nombre)}
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Descargar Logo
+                            </Button>
                           </div>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="absolute -bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover/logo-view:opacity-100 transition-opacity duration-300 shadow-lg gap-2"
-                            onClick={() => descargarLogo(cliente.logo_url!, cliente.nombre)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Información Principal */}
+                  <Card className="border-2 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-primary" />
+                        Información Principal
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Nombre de la Empresa
+                        </Label>
+                        <p className="text-lg font-semibold text-foreground">{cliente.nombre}</p>
+                      </div>
+                      {cliente.nombre_fiscal && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Nombre Fiscal
+                          </Label>
+                          <p className="font-medium text-foreground">{cliente.nombre_fiscal}</p>
+                        </div>
+                      )}
+                      {cliente.cif && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            CIF/NIF
+                          </Label>
+                          <p className="font-mono font-semibold text-foreground">{cliente.cif}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Estado y Fechas */}
+                  <Card className="border-2 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        Estado y Fechas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Estado
+                        </Label>
+                        <div>
+                          <Badge 
+                            variant={cliente.activo ? "default" : "secondary"}
+                            className={cliente.activo ? "bg-green-600 hover:bg-green-700" : ""}
                           >
-                            <Download className="h-3.5 w-3.5" />
-                            Descargar Logo
-                          </Button>
+                            {cliente.activo ? "Activo" : "Inactivo"}
+                          </Badge>
                         </div>
                       </div>
-                    )}
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground">Nombre de la Empresa</Label>
-                      <p className="font-medium">{cliente.nombre}</p>
-                    </div>
-                    {cliente.nombre_fiscal && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Nombre Fiscal</Label>
-                        <p className="font-medium">{cliente.nombre_fiscal}</p>
-                      </div>
-                    )}
-                    {cliente.cif && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">CIF/NIF</Label>
-                        <p className="font-medium">{cliente.cif}</p>
-                      </div>
-                    )}
-                    <div className="space-y-1">
-                      <Label className="text-muted-foreground">Estado</Label>
-                      <Badge variant={cliente.activo ? "default" : "secondary"}>
-                        {cliente.activo ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </div>
-                    {cliente.fecha_alta_cliente && (
-                      <div className="space-y-1 col-span-2">
-                        <Label className="text-muted-foreground">Fecha de Alta del Cliente</Label>
-                        <p className="font-medium">{new Date(cliente.fecha_alta_cliente).toLocaleDateString()}</p>
-                      </div>
-                    )}
-                  </div>
+                      {cliente.fecha_alta_cliente && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Fecha de Alta
+                          </Label>
+                          <p className="font-medium text-foreground flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            {new Date(cliente.fecha_alta_cliente).toLocaleDateString('es-ES', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               </TabsContent>
 
               <TabsContent value="contactos" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    Personas de Contacto
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {cliente.persona_contacto && (
-                      <div className="space-y-1 col-span-2">
-                        <Label className="text-muted-foreground">Persona de Contacto</Label>
-                        <p className="font-medium">{cliente.persona_contacto}</p>
-                      </div>
-                    )}
-                    {cliente.telefono && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Teléfono</Label>
-                        <a href={`tel:${cliente.telefono}`} className="font-medium hover:text-primary">
-                          {cliente.telefono}
-                        </a>
-                      </div>
-                    )}
-                    {cliente.email && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Email</Label>
-                        <a href={`mailto:${cliente.email}`} className="font-medium hover:text-primary">
-                          {cliente.email}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {(cliente.nombre_encargado || cliente.telefono_encargado) && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Briefcase className="h-5 w-5 text-primary" />
-                      Encargado
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      {cliente.nombre_encargado && (
-                        <div className="space-y-1">
-                          <Label className="text-muted-foreground">Nombre del Encargado</Label>
-                          <p className="font-medium">{cliente.nombre_encargado}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contacto Principal */}
+                  <Card className="border-2 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        Contacto Principal
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {cliente.persona_contacto && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Persona de Contacto
+                          </Label>
+                          <p className="text-lg font-semibold text-foreground">{cliente.persona_contacto}</p>
                         </div>
                       )}
-                      {cliente.telefono_encargado && (
-                        <div className="space-y-1">
-                          <Label className="text-muted-foreground">Teléfono del Encargado</Label>
-                          <a href={`tel:${cliente.telefono_encargado}`} className="font-medium hover:text-primary">
-                            {cliente.telefono_encargado}
+                      {cliente.telefono && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                            <Phone className="h-3 w-3" />
+                            Teléfono
+                          </Label>
+                          <a 
+                            href={`tel:${cliente.telefono}`} 
+                            className="flex items-center gap-2 text-lg font-semibold text-primary hover:underline transition-colors"
+                          >
+                            <Phone className="h-4 w-4" />
+                            {cliente.telefono}
                           </a>
                         </div>
                       )}
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="ubicacion" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    Dirección
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {cliente.direccion && (
-                      <div className="space-y-1 col-span-2">
-                        <Label className="text-muted-foreground">Dirección</Label>
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                            `${cliente.direccion}, ${cliente.codigo_postal || ""} ${cliente.poblacion || ""}, ${cliente.provincia || ""}`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-medium text-primary hover:underline flex items-center gap-2"
-                        >
-                          <MapPin className="h-4 w-4" />
-                          {cliente.direccion}
-                        </a>
-                      </div>
-                    )}
-                    {cliente.codigo_postal && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Código Postal</Label>
-                        <p className="font-medium">{cliente.codigo_postal}</p>
-                      </div>
-                    )}
-                    {cliente.poblacion && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Población</Label>
-                        <p className="font-medium">{cliente.poblacion}</p>
-                      </div>
-                    )}
-                    {cliente.provincia && (
-                      <div className="space-y-1 col-span-2">
-                        <Label className="text-muted-foreground">Provincia</Label>
-                        <p className="font-medium">{cliente.provincia}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="fiscal" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-primary" />
-                    Información Fiscal
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    {cliente.selector_fiscal && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Selector Fiscal</Label>
-                        <p className="font-medium capitalize">{cliente.selector_fiscal}</p>
-                      </div>
-                    )}
-                    {cliente.r_iva && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">R. IVA</Label>
-                        <p className="font-medium">{cliente.r_iva}</p>
-                      </div>
-                    )}
-                    {cliente.epigrafe && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Epígrafe</Label>
-                        <p className="font-medium">{cliente.epigrafe}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="asesoria" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Briefcase className="h-5 w-5 text-primary" />
-                    Información de la Asesoría
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {cliente.nombre_asesoria && (
-                      <div className="space-y-1 col-span-2">
-                        <Label className="text-muted-foreground">Nombre de la Asesoría</Label>
-                        <p className="font-medium">{cliente.nombre_asesoria}</p>
-                      </div>
-                    )}
-                    {cliente.telefono_asesoria && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Teléfono Asesoría</Label>
-                        <a href={`tel:${cliente.telefono_asesoria}`} className="font-medium hover:text-primary">
-                          {cliente.telefono_asesoria}
-                        </a>
-                      </div>
-                    )}
-                    {cliente.persona_contacto_asesoria && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Persona de Contacto</Label>
-                        <p className="font-medium">{cliente.persona_contacto_asesoria}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="equipos" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                      <Wrench className="h-5 w-5 text-primary" />
-                      Equipos del Cliente
-                    </h3>
-                    <Dialog open={dialogEquipoOpen} onOpenChange={setDialogEquipoOpen}>
-                      <DialogTrigger asChild>
-                        <Button size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Agregar Equipo
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-h-[80vh] overflow-y-auto max-w-3xl">
-                        <DialogHeader>
-                          <DialogTitle>Agregar Equipo</DialogTitle>
-                          <DialogDescription>Registra un nuevo equipo del cliente</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="space-y-2">
-                            <Label>Tipo de Equipo</Label>
-                            <Input
-                              value={nuevoEquipo.tipo}
-                              onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, tipo: e.target.value })}
-                              placeholder="Ej: TPV, Cash Guard, Balanza"
-                            />
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>TPV</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.tpv}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, tpv: value })}
-                                options={equipoConfigs.tpv || []}
-                                placeholder="Seleccionar TPV..."
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Sistema Operativo (WIND)</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.wind}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, wind: value })}
-                                options={equipoConfigs.wind || []}
-                                placeholder="Seleccionar SO..."
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>RAM</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.ram}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, ram: value })}
-                                options={equipoConfigs.ram || []}
-                                placeholder="Seleccionar RAM..."
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Impresora</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.impresora}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, impresora: value })}
-                                options={equipoConfigs.impresora || []}
-                                placeholder="Seleccionar Impresora..."
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Software</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.software}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, software: value })}
-                                options={equipoConfigs.software || []}
-                                placeholder="Seleccionar Software..."
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Versión (V.)</Label>
-                              <Input
-                                value={nuevoEquipo.v}
-                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, v: e.target.value })}
-                                placeholder="Versión..."
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Marca</Label>
-                              <Input
-                                value={nuevoEquipo.marca}
-                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, marca: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Modelo</Label>
-                              <Input
-                                value={nuevoEquipo.modelo}
-                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, modelo: e.target.value })}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Número de Serie</Label>
-                            <Input
-                              value={nuevoEquipo.numero_serie}
-                              onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie: e.target.value })}
-                            />
-                          </div>
-
-                          {/* Nuevos campos de números de serie */}
-                          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-                            <h4 className="font-semibold text-sm">Números de Serie Específicos</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label>Nº Serie BDP</Label>
-                                <Input
-                                  value={nuevoEquipo.numero_serie_bdp}
-                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_bdp: e.target.value })}
-                                  placeholder="Número de serie BDP"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Nº Serie WIND</Label>
-                                <Input
-                                  value={nuevoEquipo.numero_serie_wind}
-                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_wind: e.target.value })}
-                                  placeholder="Número de serie WIND"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Nº Serie Store Manager</Label>
-                                <Input
-                                  value={nuevoEquipo.numero_serie_store_manager}
-                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_store_manager: e.target.value })}
-                                  placeholder="Número de serie Store Manager"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Nº Serie Cashlogy</Label>
-                                <Input
-                                  value={nuevoEquipo.numero_serie_cashlogy}
-                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_cashlogy: e.target.value })}
-                                  placeholder="Número de serie Cashlogy"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Nº Serie Impresora</Label>
-                                <Input
-                                  value={nuevoEquipo.numero_serie_impresora}
-                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, numero_serie_impresora: e.target.value })}
-                                  placeholder="Número de serie impresora"
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Contraseñas */}
-                          <div className="space-y-2">
-                            <Label>Contraseñas</Label>
-                            <Textarea
-                              value={nuevoEquipo.contraseñas}
-                              onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, contraseñas: e.target.value })}
-                              placeholder="Contraseñas y accesos del equipo..."
-                              rows={3}
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>TBAI</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.tbai}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, tbai: value })}
-                                options={equipoConfigs.tbai || []}
-                                placeholder="Seleccionar..."
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Caja Inteligente</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.c_inteligente}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, c_inteligente: value })}
-                                options={equipoConfigs.c_inteligente || []}
-                                placeholder="Seleccionar..."
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Fecha Instalación</Label>
-                              <Input
-                                type="date"
-                                value={nuevoEquipo.instalacion}
-                                onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, instalacion: e.target.value })}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Pendrive C.Seg</Label>
-                              <ConfigurableSelect
-                                value={nuevoEquipo.pendrive_c_seg}
-                                onChange={(value) => setNuevoEquipo({ ...nuevoEquipo, pendrive_c_seg: value })}
-                                options={equipoConfigs.pendrive_c_seg || []}
-                                placeholder="Seleccionar..."
-                              />
-                            </div>
-                          </div>
-
-                          {/* Garantía */}
-                          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-                            <h4 className="font-semibold text-sm">Garantía</h4>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label>Fecha Inicio Garantía</Label>
-                                <Input
-                                  type="date"
-                                  value={nuevoEquipo.garantia_inicio}
-                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, garantia_inicio: e.target.value })}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Fecha Fin Garantía</Label>
-                                <Input
-                                  type="date"
-                                  value={nuevoEquipo.garantia_fin}
-                                  onChange={(e) => setNuevoEquipo({ ...nuevoEquipo, garantia_fin: e.target.value })}
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <Button onClick={agregarEquipo} className="w-full">
-                            Agregar Equipo
-                          </Button>
+                      {cliente.email && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                            <Mail className="h-3 w-3" />
+                            Email
+                          </Label>
+                          <a 
+                            href={`mailto:${cliente.email}`} 
+                            className="flex items-center gap-2 text-lg font-semibold text-primary hover:underline transition-colors break-all"
+                          >
+                            <Mail className="h-4 w-4 flex-shrink-0" />
+                            <span className="break-all">{cliente.email}</span>
+                          </a>
                         </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  {equipos.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">No hay equipos registrados</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {equipos.map((equipo: any) => {
-                        // Calcular estado de garantía
-                        const garantiaInicio = equipo.garantia_inicio ? new Date(equipo.garantia_inicio) : null;
-                        const garantiaFin = equipo.garantia_fin ? new Date(equipo.garantia_fin) : null;
-                        const hoy = new Date();
-                        const garantiaVigente = garantiaInicio && garantiaFin && hoy >= garantiaInicio && hoy <= garantiaFin;
-                        const garantiaCaducada = garantiaFin && hoy > garantiaFin;
+                      )}
+                      {!cliente.persona_contacto && !cliente.telefono && !cliente.email && (
+                        <p className="text-sm text-muted-foreground italic">No hay información de contacto disponible</p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                        return (
-                          <div key={equipo.id} className="p-4 border-2 rounded-lg bg-card">
-                            <div className="flex items-start justify-between mb-3">
-                              <div>
-                                <p className="font-semibold text-lg">{equipo.tipo}</p>
-                                {(garantiaInicio || garantiaFin) && (
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Badge
-                                      variant={garantiaVigente ? "default" : "destructive"}
-                                      className={garantiaVigente ? "bg-green-600" : "bg-red-600"}
-                                    >
-                                      {garantiaVigente ? "Garantía Vigente" : garantiaCaducada ? "Garantía Caducada" : "Garantía"}
-                                    </Badge>
-                                    {garantiaFin && (
-                                      <span className="text-xs text-muted-foreground">
-                                        hasta {new Date(garantiaFin).toLocaleDateString()}
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
-                              {equipo.tpv && <p><span className="text-muted-foreground">TPV:</span> {equipo.tpv}</p>}
-                              {equipo.wind && <p><span className="text-muted-foreground">SO:</span> {equipo.wind}</p>}
-                              {equipo.ram && <p><span className="text-muted-foreground">RAM:</span> {equipo.ram}</p>}
-                              {equipo.impresora && <p><span className="text-muted-foreground">Impresora:</span> {equipo.impresora}</p>}
-                              {equipo.software && <p><span className="text-muted-foreground">Software:</span> {equipo.software}</p>}
-                              {equipo.v && <p><span className="text-muted-foreground">Versión:</span> {equipo.v}</p>}
-                              {equipo.marca && <p><span className="text-muted-foreground">Marca:</span> {equipo.marca}</p>}
-                              {equipo.modelo && <p><span className="text-muted-foreground">Modelo:</span> {equipo.modelo}</p>}
-                              {equipo.numero_serie && <p><span className="text-muted-foreground">S/N:</span> {equipo.numero_serie}</p>}
-                              {equipo.numero_serie_bdp && <p><span className="text-muted-foreground">S/N BDP:</span> {equipo.numero_serie_bdp}</p>}
-                              {equipo.numero_serie_wind && <p><span className="text-muted-foreground">S/N WIND:</span> {equipo.numero_serie_wind}</p>}
-                              {equipo.numero_serie_store_manager && <p><span className="text-muted-foreground">S/N Store Manager:</span> {equipo.numero_serie_store_manager}</p>}
-                              {equipo.numero_serie_cashlogy && <p><span className="text-muted-foreground">S/N Cashlogy:</span> {equipo.numero_serie_cashlogy}</p>}
-                              {equipo.numero_serie_impresora && <p><span className="text-muted-foreground">S/N Impresora:</span> {equipo.numero_serie_impresora}</p>}
-                              {equipo.tbai && <p><span className="text-muted-foreground">TBAI:</span> {equipo.tbai}</p>}
-                              {equipo.c_inteligente && <p><span className="text-muted-foreground">Caja Inteligente:</span> {equipo.c_inteligente}</p>}
-                              {equipo.pendrive_c_seg && <p><span className="text-muted-foreground">Pendrive C.Seg:</span> {equipo.pendrive_c_seg}</p>}
-                              {equipo.instalacion && (
-                                <p className="col-span-2"><span className="text-muted-foreground">Instalación:</span> {new Date(equipo.instalacion).toLocaleDateString()}</p>
-                              )}
-                              {equipo.contraseñas && (
-                                <p className="col-span-2"><span className="text-muted-foreground">Contraseñas:</span> <span className="whitespace-pre-wrap">{equipo.contraseñas}</span></p>
-                              )}
-                            </div>
-
-                            <IncidenciasEquipo equipoId={equipo.id} />
+                  {/* Encargado */}
+                  {(cliente.nombre_encargado || cliente.telefono_encargado) && (
+                    <Card className="border-2 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-primary" />
+                          Encargado
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {cliente.nombre_encargado && (
+                          <div className="space-y-2">
+                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                              Nombre del Encargado
+                            </Label>
+                            <p className="text-lg font-semibold text-foreground">{cliente.nombre_encargado}</p>
                           </div>
-                        );
-                      })}
-                    </div>
+                        )}
+                        {cliente.telefono_encargado && (
+                          <div className="space-y-2 pt-2 border-t">
+                            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                              <Phone className="h-3 w-3" />
+                              Teléfono del Encargado
+                            </Label>
+                            <a 
+                              href={`tel:${cliente.telefono_encargado}`} 
+                              className="flex items-center gap-2 text-lg font-semibold text-primary hover:underline transition-colors"
+                            >
+                              <Phone className="h-4 w-4" />
+                              {cliente.telefono_encargado}
+                            </a>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
               </TabsContent>
 
+              <TabsContent value="ubicacion" className="space-y-6 mt-6">
+                <Card className="border-2 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Dirección Completa
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {cliente.direccion && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Dirección
+                        </Label>
+                        <div className="flex items-start gap-2">
+                          <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              `${cliente.direccion}, ${cliente.codigo_postal || ""} ${cliente.poblacion || ""}, ${cliente.provincia || ""}`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-lg font-semibold text-primary hover:underline flex items-center gap-2 transition-colors"
+                          >
+                            {cliente.direccion}
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      {cliente.codigo_postal && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Código Postal
+                          </Label>
+                          <p className="font-mono font-semibold text-foreground">{cliente.codigo_postal}</p>
+                        </div>
+                      )}
+                      {cliente.poblacion && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Población
+                          </Label>
+                          <p className="font-semibold text-foreground">{cliente.poblacion}</p>
+                        </div>
+                      )}
+                      {cliente.provincia && (
+                        <div className="space-y-2 col-span-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Provincia
+                          </Label>
+                          <p className="font-semibold text-foreground">{cliente.provincia}</p>
+                        </div>
+                      )}
+                    </div>
+                    {cliente.direccion && (
+                      <div className="pt-4 border-t">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            window.open(
+                              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                `${cliente.direccion}, ${cliente.codigo_postal || ""} ${cliente.poblacion || ""}, ${cliente.provincia || ""}`
+                              )}`,
+                              "_blank"
+                            );
+                          }}
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Ver en Google Maps
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
+                    )}
+                    {!cliente.direccion && !cliente.codigo_postal && !cliente.poblacion && !cliente.provincia && (
+                      <p className="text-sm text-muted-foreground italic">No hay información de ubicación disponible</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="fiscal" className="space-y-6 mt-6">
+                <Card className="border-2 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-primary" />
+                      Información Fiscal
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {cliente.selector_fiscal && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Selector Fiscal
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-base font-semibold capitalize">
+                              {cliente.selector_fiscal}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
+                      {cliente.r_iva && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            R. IVA
+                          </Label>
+                          <p className="text-lg font-semibold text-foreground">{cliente.r_iva}</p>
+                        </div>
+                      )}
+                      {cliente.epigrafe && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Epígrafe
+                          </Label>
+                          <p className="text-lg font-semibold text-foreground font-mono">{cliente.epigrafe}</p>
+                        </div>
+                      )}
+                    </div>
+                    {!cliente.selector_fiscal && !cliente.r_iva && !cliente.epigrafe && (
+                      <p className="text-sm text-muted-foreground italic pt-4">No hay información fiscal disponible</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="asesoria" className="space-y-6 mt-6">
+                <Card className="border-2 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-primary" />
+                      Información de la Asesoría
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {cliente.nombre_asesoria && (
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Nombre de la Asesoría
+                        </Label>
+                        <p className="text-lg font-semibold text-foreground">{cliente.nombre_asesoria}</p>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
+                      {cliente.telefono_asesoria && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                            <Phone className="h-3 w-3" />
+                            Teléfono Asesoría
+                          </Label>
+                          <a 
+                            href={`tel:${cliente.telefono_asesoria}`} 
+                            className="flex items-center gap-2 text-lg font-semibold text-primary hover:underline transition-colors"
+                          >
+                            <Phone className="h-4 w-4" />
+                            {cliente.telefono_asesoria}
+                          </a>
+                        </div>
+                      )}
+                      {cliente.persona_contacto_asesoria && (
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Persona de Contacto
+                          </Label>
+                          <p className="text-lg font-semibold text-foreground">{cliente.persona_contacto_asesoria}</p>
+                        </div>
+                      )}
+                    </div>
+                    {!cliente.nombre_asesoria && !cliente.telefono_asesoria && !cliente.persona_contacto_asesoria && (
+                      <p className="text-sm text-muted-foreground italic pt-4">No hay información de asesoría disponible</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="equipos" className="space-y-6 mt-6">
+                <EquiposSection
+                  equipos={equipos}
+                  dialogEquipoOpen={dialogEquipoOpen}
+                  setDialogEquipoOpen={setDialogEquipoOpen}
+                  nuevoEquipo={nuevoEquipo}
+                  setNuevoEquipo={setNuevoEquipo}
+                  equipoConfigs={equipoConfigs}
+                  onAgregarEquipo={agregarEquipo}
+                />
+              </TabsContent>
+
               <TabsContent value="archivos" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    Archivos PDF
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Funcionalidad de gestión de documentos disponible próximamente.
-                  </p>
-                </div>
+                <Card className="border-2 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Archivos PDF
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                      <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                        <FileType className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <div className="text-center space-y-2">
+                        <p className="text-base font-semibold text-foreground">
+                          Gestión de Documentos
+                        </p>
+                        <p className="text-sm text-muted-foreground max-w-md">
+                          La funcionalidad de gestión de documentos PDF estará disponible próximamente. 
+                          Podrás subir, visualizar y descargar documentos relacionados con este cliente.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="notas" className="space-y-6 mt-6">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <StickyNote className="h-5 w-5 text-primary" />
-                    Notas e Información
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4">
-                    {cliente.notas && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Razón Social / Notas</Label>
-                        <p className="font-medium whitespace-pre-wrap">{cliente.notas}</p>
-                      </div>
-                    )}
-                    {cliente.informacion_destacada && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Información Destacada</Label>
-                        <p className="font-medium whitespace-pre-wrap">{cliente.informacion_destacada}</p>
-                      </div>
-                    )}
-                    {cliente.notas_especiales && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Notas Especiales</Label>
-                        <p className="font-medium whitespace-pre-wrap">{cliente.notas_especiales}</p>
-                      </div>
-                    )}
-                    {cliente.notas_adicionales && (
-                      <div className="space-y-1">
-                        <Label className="text-muted-foreground">Notas Adicionales</Label>
-                        <p className="font-medium whitespace-pre-wrap">{cliente.notas_adicionales}</p>
-                      </div>
-                    )}
-                  </div>
+                <div className="grid grid-cols-1 gap-6">
+                  {cliente.informacion_destacada && (
+                    <Card className="border-2 border-primary/30 bg-primary/5 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-primary" />
+                          Información Destacada
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">{cliente.informacion_destacada}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {cliente.notas_especiales && (
+                    <Card className="border-2 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <StickyNote className="h-4 w-4 text-primary" />
+                          Notas Especiales
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">{cliente.notas_especiales}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {cliente.notas_adicionales && (
+                    <Card className="border-2 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-primary" />
+                          Notas Adicionales
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">{cliente.notas_adicionales}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {cliente.notas && (
+                    <Card className="border-2 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <ScrollText className="h-4 w-4 text-primary" />
+                          Notas Generales
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground">{cliente.notas}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {!cliente.notas && !cliente.informacion_destacada && !cliente.notas_especiales && !cliente.notas_adicionales && (
+                    <Card className="border-2 shadow-sm">
+                      <CardContent className="pt-6">
+                        <p className="text-sm text-muted-foreground italic text-center">No hay notas disponibles</p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </TabsContent>
 
               <TabsContent value="contrato" className="space-y-6 mt-6">
-                {/* Avisos */}
                 {(cliente.aviso_moroso || cliente.aviso_cobrar_antes) && (
-                  <Card className="border-2 border-red-500 bg-red-50">
-                    <CardHeader>
+                  <Card className="border-2 border-red-500/50 bg-red-50 shadow-sm">
+                    <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2 text-red-700">
                         <AlertTriangle className="h-4 w-4" />
                         Avisos Importantes
@@ -2381,78 +1291,114 @@ const DetalleCliente = () => {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {cliente.aviso_moroso && (
-                        <div className="flex items-center gap-2 p-3 bg-red-100 text-red-800 rounded font-semibold">
-                          <AlertTriangle className="h-5 w-5" />
-                          <span>CLIENTE MOROSO</span>
+                        <div className="flex items-center gap-3 p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg font-semibold shadow-sm">
+                          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                          <span className="text-base">CLIENTE MOROSO</span>
                         </div>
                       )}
                       {cliente.aviso_cobrar_antes && (
-                        <div className="p-3 bg-red-100 text-red-800 rounded">
-                          <p className="font-semibold whitespace-pre-wrap">{cliente.aviso_cobrar_antes}</p>
+                        <div className="p-4 bg-red-100 border border-red-300 text-red-800 rounded-lg">
+                          <p className="font-semibold whitespace-pre-wrap text-sm leading-relaxed">{cliente.aviso_cobrar_antes}</p>
                         </div>
                       )}
                     </CardContent>
                   </Card>
                 )}
 
-                {/* Contratos de Mantenimiento */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Contratos de Mantenimiento</h3>
-                  {contratos.filter(c => c.activo).length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">No hay contratos activos</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {contratos
-                        .filter(c => c.activo)
-                        .map((contrato) => {
-                          const fechaCaducidad = new Date(contrato.fecha_caducidad);
-                          const hoy = new Date();
-                          const estaExpirado = fechaCaducidad < hoy;
+                <Card className="border-2 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ScrollText className="h-4 w-4 text-primary" />
+                      Contratos de Mantenimiento
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {contratos.filter(c => c.activo).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic text-center py-8">No hay contratos activos</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {contratos
+                          .filter(c => c.activo)
+                          .map((contrato) => {
+                            const fechaCaducidad = new Date(contrato.fecha_caducidad);
+                            const hoy = new Date();
+                            const estaExpirado = fechaCaducidad < hoy;
 
-                          return (
-                            <div
-                              key={contrato.id}
-                              className={`p-4 border-2 rounded-lg ${
-                                estaExpirado ? "border-red-300 bg-red-50" : "border-primary/20 bg-primary/5"
-                              }`}
-                            >
-                              <div className="mb-3">
-                                <p className={`font-semibold capitalize text-lg ${estaExpirado ? "text-red-700" : ""}`}>
-                                  Contrato {contrato.tipo}
-                                </p>
-                                {estaExpirado && (
-                                  <Badge variant="destructive" className="mt-1">
-                                    <AlertTriangle className="h-3 w-3 mr-1" />
-                                    Expirado
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-muted-foreground text-xs">Fecha de Alta</Label>
-                                  <p className="font-medium">
-                                    {new Date(contrato.fecha_alta).toLocaleDateString()}
-                                  </p>
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-muted-foreground text-xs">Fecha de Caducidad</Label>
-                                  <p className={`font-medium ${estaExpirado ? "text-red-700" : ""}`}>
-                                    {new Date(contrato.fecha_caducidad).toLocaleDateString()}
-                                  </p>
-                                </div>
-                                {contrato.notas && (
-                                  <div className="col-span-2 space-y-1">
-                                    <Label className="text-muted-foreground text-xs">Notas</Label>
-                                    <p className="text-sm">{contrato.notas}</p>
+                            return (
+                              <Card
+                                key={contrato.id}
+                                className={`border-2 ${
+                                  estaExpirado 
+                                    ? "border-red-300 bg-red-50/50" 
+                                    : "border-green-300 bg-green-50/30"
+                                } shadow-sm`}
+                              >
+                                <CardContent className="pt-6">
+                                  <div className="flex items-start justify-between mb-4">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <p className={`font-semibold capitalize text-lg ${estaExpirado ? "text-red-700" : "text-green-700"}`}>
+                                          Contrato {contrato.tipo}
+                                        </p>
+                                        {estaExpirado ? (
+                                          <Badge variant="destructive" className="ml-2">
+                                            <AlertTriangle className="h-3 w-3 mr-1" />
+                                            Expirado
+                                          </Badge>
+                                        ) : (
+                                          <Badge className="ml-2 bg-green-600 hover:bg-green-700">
+                                            Activo
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                                        <Calendar className="h-3 w-3" />
+                                        Fecha de Alta
+                                      </Label>
+                                      <p className="font-medium text-foreground flex items-center gap-2">
+                                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                                        {new Date(contrato.fecha_alta).toLocaleDateString('es-ES', {
+                                          year: 'numeric',
+                                          month: 'long',
+                                          day: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                                        <Calendar className="h-3 w-3" />
+                                        Fecha de Caducidad
+                                      </Label>
+                                      <p className={`font-medium flex items-center gap-2 ${estaExpirado ? "text-red-700" : "text-foreground"}`}>
+                                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                                        {new Date(contrato.fecha_caducidad).toLocaleDateString('es-ES', {
+                                          year: 'numeric',
+                                          month: 'long',
+                                          day: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
+                                    {contrato.notas && (
+                                      <div className="col-span-full space-y-2 pt-2 border-t">
+                                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                          Notas
+                                        </Label>
+                                        <p className="text-sm text-foreground leading-relaxed">{contrato.notas}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -2460,87 +1406,12 @@ const DetalleCliente = () => {
       )}
 
       {/* Historial Completo de Tickets */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5" />
-              <CardTitle>Historial Completo de Tickets</CardTitle>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={exportarHistorial}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </Button>
-              <Button size="sm" variant="outline" onClick={enviarHistorialEmail}>
-                <Send className="h-4 w-4 mr-2" />
-                Enviar Email
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {historialCompleto.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No hay tickets registrados</p>
-          ) : (
-            <>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {(showAllTickets ? historialCompleto : historialCompleto.slice(0, 10)).map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/tickets/${ticket.id}`)}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        #{ticket.numero} - {ticket.titulo}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(ticket.fecha_creacion).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {ticket.estado === "activo" ? (
-                        <Badge variant="default">Activo</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Finalizado
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {historialCompleto.length > 10 && (
-                <div className="mt-4 text-center">
-                  <Button variant="outline" onClick={() => setShowAllTickets(!showAllTickets)}>
-                    {showAllTickets ? "Mostrar menos" : `Mostrar todos (${historialCompleto.length})`}
-                  </Button>
-                </div>
-              )}
-              <div className="mt-4 pt-4 border-t">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">{ticketsAbiertos.length}</p>
-                    <p className="text-sm text-muted-foreground">Abiertos</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-green-600">
-                      {historialCompleto.filter((t) => t.estado === "finalizado").length}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Finalizados</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{historialCompleto.length}</p>
-                    <p className="text-sm text-muted-foreground">Total</p>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+      <TicketsHistorial
+        historialCompleto={historialCompleto}
+        ticketsAbiertos={ticketsAbiertos}
+        nombreCliente={cliente.nombre}
+        clienteId={id!}
+      />
     </div>
   );
 };

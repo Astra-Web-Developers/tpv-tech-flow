@@ -231,7 +231,7 @@ const DetalleTicket = () => {
   const loadEtiquetas = async () => {
     try {
       const { data, error } = await supabase
-        .from("etiquetas")
+        .from("etiquetas_tickets")
         .select("*")
         .order("nombre");
 
@@ -247,7 +247,7 @@ const DetalleTicket = () => {
       const { data, error } = await supabase
         .from("tickets_etiquetas")
         .select(`
-          etiquetas (
+          etiquetas_tickets (
             id,
             nombre,
             color
@@ -256,7 +256,7 @@ const DetalleTicket = () => {
         .eq("ticket_id", id);
 
       if (error) throw error;
-      setEtiquetasTicket(data?.map((e: any) => e.etiquetas) || []);
+      setEtiquetasTicket(data?.map((e: any) => e.etiquetas_tickets) || []);
     } catch (error) {
       console.error("Error cargando etiquetas del ticket:", error);
     }
