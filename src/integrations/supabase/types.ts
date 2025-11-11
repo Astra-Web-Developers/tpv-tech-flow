@@ -1004,6 +1004,39 @@ export type Database = {
           },
         ]
       }
+      notificaciones: {
+        Row: {
+          created_at: string
+          id: string
+          leida: boolean | null
+          link: string | null
+          mensaje: string
+          tipo: string
+          titulo: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leida?: boolean | null
+          link?: string | null
+          mensaje: string
+          tipo: string
+          titulo: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leida?: boolean | null
+          link?: string | null
+          mensaje?: string
+          tipo?: string
+          titulo?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       participantes_conversacion: {
         Row: {
           conversacion_id: string
