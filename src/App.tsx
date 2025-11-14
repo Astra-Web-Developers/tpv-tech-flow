@@ -23,6 +23,7 @@ import Furgonetas from "./pages/Furgonetas";
 import Protocolos from "./pages/Protocolos";
 import ImportarClientes from "./pages/ImportarClientes";
 import Configuracion from "./pages/Configuracion";
+import Perfil from "./pages/Perfil";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/protocolos" element={<Protocolos />} />
             <Route path="/importar-clientes" element={<ImportarClientes />} />
             <Route path="/configuracion" element={<Configuracion />} />
+            <Route path="/perfil" element={<Perfil />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

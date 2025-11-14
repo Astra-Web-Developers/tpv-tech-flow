@@ -82,6 +82,14 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
+                  <a href="/perfil">
+                    <Users className="h-4 w-4" />
+                    <span>Mi Perfil</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
                   <a href="/configuracion">
                     <Settings className="h-4 w-4" />
                     <span>Configuración</span>

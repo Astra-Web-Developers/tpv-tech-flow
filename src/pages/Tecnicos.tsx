@@ -11,6 +11,10 @@ import { Plus, Search, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RoleManager } from "@/components/tecnicos/RoleManager";
+import type { Database } from "@/integrations/supabase/types";
+
+type UserRole = Database["public"]["Enums"]["app_role"];
 
 interface Tecnico {
   id: string;
@@ -21,6 +25,7 @@ interface Tecnico {
   foto_url: string | null;
   especialidades: string[] | null;
   activo: boolean;
+  roles?: UserRole[];
 }
 
 const Tecnicos = () => {
@@ -45,13 +50,29 @@ const Tecnicos = () => {
 
   const loadTecnicos = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
         .order("nombre");
 
-      if (error) throw error;
-      setTecnicos(data || []);
+      if (profilesError) throw profilesError;
+
+      // Cargar roles para cada técnico
+      const tecnicosConRoles = await Promise.all(
+        (profilesData || []).map(async (profile) => {
+          const { data: rolesData } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", profile.id);
+
+          return {
+            ...profile,
+            roles: rolesData?.map((r) => r.role) || [],
+          };
+        })
+      );
+
+      setTecnicos(tecnicosConRoles);
     } catch (error) {
       console.error("Error cargando técnicos:", error);
       toast.error("Error al cargar técnicos");
@@ -303,24 +324,54 @@ const Tecnicos = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {tecnico.telefono && (
                   <p className="text-sm">
                     <span className="font-medium">Tel:</span> {tecnico.telefono}
                   </p>
                 )}
-                {tecnico.especialidades && tecnico.especialidades.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {tecnico.especialidades.map((esp, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {esp}
-                      </Badge>
-                    ))}
+
+                {/* Roles */}
+                {tecnico.roles && tecnico.roles.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Roles:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {tecnico.roles.map((role, idx) => {
+                        const variant = role === "admin" ? "destructive" : role === "comercial" ? "secondary" : "default";
+                        const label = role === "admin" ? "Admin" : role === "tecnico" ? "Técnico" : role === "comercial" ? "Comercial" : "Proveedor";
+                        return (
+                          <Badge key={idx} variant={variant as any} className="text-xs">
+                            {label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
+
+                {tecnico.especialidades && tecnico.especialidades.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Especialidades:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {tecnico.especialidades.map((esp, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {esp}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <Badge variant={tecnico.activo ? "success" : "secondary"}>
                   {tecnico.activo ? "Activo" : "Inactivo"}
                 </Badge>
+
+                {/* Role Manager */}
+                <RoleManager
+                  userId={tecnico.id}
+                  userName={`${tecnico.nombre} ${tecnico.apellidos || ''}`}
+                  onRolesUpdated={loadTecnicos}
+                />
               </div>
             </CardContent>
           </Card>
