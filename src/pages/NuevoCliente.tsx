@@ -192,52 +192,54 @@ const NuevoCliente = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2 col-span-2">
                       <Label>Logo de la Empresa</Label>
-                      <Tabs defaultValue="upload" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="upload">Subir Archivo</TabsTrigger>
-                          <TabsTrigger value="url">URL</TabsTrigger>
-                        </TabsList>
+                      <div className="space-y-3">
+                        <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
+                          {logoPreview ? (
+                            <div className="relative w-full">
+                              <img
+                                src={logoPreview}
+                                alt="Vista previa"
+                                className="max-h-32 mx-auto object-contain rounded"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-0 right-0"
+                                onClick={clearLogo}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                              <p className="text-xs text-center text-muted-foreground mt-2">
+                                {logoFile?.name}
+                              </p>
+                            </div>
+                          ) : (
+                            <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
+                              <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                              <p className="text-sm font-medium">Click para seleccionar archivo</p>
+                              <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG hasta 5MB</p>
+                            </label>
+                          )}
+                          <Input
+                            id="logo-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleLogoFileChange}
+                          />
+                        </div>
 
-                        <TabsContent value="upload" className="space-y-3">
-                          <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
-                            {logoPreview ? (
-                              <div className="relative w-full">
-                                <img
-                                  src={logoPreview}
-                                  alt="Vista previa"
-                                  className="max-h-32 mx-auto object-contain rounded"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="icon"
-                                  className="absolute top-0 right-0"
-                                  onClick={clearLogo}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                                <p className="text-xs text-center text-muted-foreground mt-2">
-                                  {logoFile?.name}
-                                </p>
-                              </div>
-                            ) : (
-                              <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
-                                <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                                <p className="text-sm font-medium">Click para seleccionar imagen</p>
-                                <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG hasta 5MB</p>
-                              </label>
-                            )}
-                            <Input
-                              id="logo-upload"
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={handleLogoFileChange}
-                            />
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
                           </div>
-                        </TabsContent>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">O ingresa una URL</span>
+                          </div>
+                        </div>
 
-                        <TabsContent value="url" className="space-y-3">
+                        <div className="space-y-2">
                           <Input
                             id="logo_url"
                             type="url"
@@ -257,8 +259,8 @@ const NuevoCliente = () => {
                               />
                             </div>
                           )}
-                        </TabsContent>
-                      </Tabs>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-2 col-span-2">

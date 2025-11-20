@@ -206,72 +206,62 @@ export const ClienteInfoTabs = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Tabs defaultValue="upload" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="upload">Subir Archivo</TabsTrigger>
-                      <TabsTrigger value="url">URL</TabsTrigger>
-                    </TabsList>
+                  <div className="space-y-3">
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
+                      {logoPreview || cliente.logo_url ? (
+                        <div className="relative w-full">
+                          <img
+                            src={logoPreview || cliente.logo_url || ""}
+                            alt="Vista previa"
+                            className="max-h-32 mx-auto object-contain rounded"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2"
+                            onClick={onClearLogo}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                          {logoFile && (
+                            <p className="text-xs text-center text-muted-foreground mt-2">{logoFile.name}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
+                          <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                          <p className="text-sm font-medium">Click para seleccionar archivo</p>
+                          <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG hasta 5MB</p>
+                        </label>
+                      )}
+                      <Input
+                        id="logo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={onLogoFileChange}
+                      />
+                    </div>
 
-                    <TabsContent value="upload" className="space-y-3 mt-4">
-                      <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 hover:border-primary transition-colors">
-                        {logoPreview || cliente.logo_url ? (
-                          <div className="relative w-full">
-                            <img
-                              src={logoPreview || cliente.logo_url || ""}
-                              alt="Vista previa"
-                              className="max-h-32 mx-auto object-contain rounded"
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute -top-2 -right-2"
-                              onClick={onClearLogo}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                            {logoFile && (
-                              <p className="text-xs text-center text-muted-foreground mt-2">{logoFile.name}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center">
-                            <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                            <p className="text-sm font-medium">Click para seleccionar</p>
-                            <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG hasta 5MB</p>
-                          </label>
-                        )}
-                        <Input
-                          id="logo-upload"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={onLogoFileChange}
-                        />
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
                       </div>
-                    </TabsContent>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">O ingresa una URL</span>
+                      </div>
+                    </div>
 
-                    <TabsContent value="url" className="space-y-3 mt-4">
+                    <div className="space-y-2">
                       <Input
                         type="url"
                         placeholder="https://ejemplo.com/logo.png"
                         value={cliente.logo_url || ""}
                         onChange={(e) => setCliente({ ...cliente, logo_url: e.target.value })}
                       />
-                      {cliente.logo_url && (
-                        <div className="relative border-2 border-dashed rounded-lg p-4">
-                          <img
-                            src={cliente.logo_url}
-                            alt="Logo preview"
-                            className="max-h-32 mx-auto object-contain rounded"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
